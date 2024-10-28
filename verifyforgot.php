@@ -109,13 +109,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p>Enter the OTP sent to your registered phone number</p>
        
         <?php if ($message) echo $message; ?>
-        <form method="post" action="">
+        <form method="post" action="" id="otpForm">
             <div class="otp-inputs">
                 <?php for ($i = 0; $i < 6; $i++): ?>
                     <input type="text" name="otp[]" class="otp-input" maxlength="1" required oninput="moveFocus(this)" pattern="[0-9]*">
                 <?php endfor; ?>
             </div>
-            <button type="submit" class="btn btn-primary">Verify</button>
         </form>
     </div>
 
@@ -126,6 +125,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (currentInput.value.length === 0 && currentInput.previousElementSibling) {
                 currentInput.previousElementSibling.focus();
+            }
+
+            // Automatically submit the form if the last input is filled
+            const otpInputs = document.querySelectorAll('.otp-input');
+            const allFilled = Array.from(otpInputs).every(input => input.value.length === 1);
+            if (allFilled) {
+                document.getElementById('otpForm').submit();
             }
         }
 

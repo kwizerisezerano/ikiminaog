@@ -127,13 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="post">
+        <form id="otpForm" method="post">
             <div class="otp-inputs">
                 <?php for ($i = 0; $i < 6; $i++): ?>
                     <input type="text" name="otp[]" class="otp-input" maxlength="1" required oninput="moveFocus(this)" onkeydown="handleKeyDown(event, this)" pattern="[0-9]*">
                 <?php endfor; ?>
             </div>
-            <button type="submit" name="verify_submit" class="btn">Verify</button>
+            <input type="hidden" name="verify_submit" value="1"> <!-- Hidden input to identify form submission -->
         </form>
     </div>
 
@@ -143,6 +143,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function moveFocus(currentInput) {
             if (currentInput.value.length === 1 && currentInput.nextElementSibling) {
                 currentInput.nextElementSibling.focus();
+            }
+
+            // Automatically submit the form if the last input is filled
+            const otpInputs = document.querySelectorAll('.otp-input');
+            const allFilled = Array.from(otpInputs).every(input => input.value.length === 1);
+            if (allFilled) {
+                document.getElementById('otpForm').submit(); // Automatically submit the form
             }
         }
 
