@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo "
             <script>
                 setTimeout(function() {
-                    window.location.href = 'home.php'; // Change 'home.php' to your actual home page URL
+                    window.location.href = 'user_profile.php'; // Change 'home.php' to your actual home page URL
                 }, 2000);
             </script>
             ";
