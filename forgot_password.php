@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             echo '<script>
                     setTimeout(function() {
-                        window.location.href = "verifyforgot.php";
+                        window.location.href = "verifyforgot.php?phone_number='.$phoneNumber.'";
                     }, 2000);
                   </script>';
         } else {
