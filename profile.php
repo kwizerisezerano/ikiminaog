@@ -182,93 +182,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-   <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Join Ikimina
-                </a>
-                <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                    <a class="dropdown-item" href="#">Available list of Ibimina you may join</a>
-                    <a class="dropdown-item" href="#">List of Ibimina you have joined</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="accountDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Account
-                </a>
-                <div class="dropdown-menu" aria-labelledby="accountDropdown">
-                    <a class="dropdown-item" href="#">View Profile</a>
-                    <a class="dropdown-item" href="#">Update Profile</a>
-                    <a class="dropdown-item" href="#">Account Status</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Contributions
-                </a>
-                <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
-                    <a class="dropdown-item" href="#">Send contributions</a>
-                    <a class="dropdown-item" href="#">View Total Contributions</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Loans
-                </a>
-                <div class="dropdown-menu" aria-labelledby="loansDropdown">
-                    <a class="dropdown-item" href="#">View loan status</a>
-                    <a class="dropdown-item" href="#">Apply for loan</a>
-                    <a class="dropdown-item" href="#">Pay for loan</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Penalties
-                </a>
-                <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
-                    <a class="dropdown-item" href="#">View Paid Penalties</a>
-                    <a class="dropdown-item" href="#">View Unpaid Penalties</a>
-                    <a class="dropdown-item" href="#">Pay Penalties</a>
-                </div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">Notifications</a>
-            </li>
-        </ul>
-
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-user"></i> 
-                    <?php echo htmlspecialchars($user_name); ?>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link position-relative" href="#">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge"><?php echo $total_notifications; ?></span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-cog"></i>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" onclick="confirmLogout()">
-                    <i class="fas fa-sign-out-alt"></i> Log Out
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
-
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Join Ikimina
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
+                        <a class="dropdown-item" href="#">Available list of Ibimina you may join</a>
+                        <a class="dropdown-item" href="#">List of Ibimina you have joined</a>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="accountDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Account
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="accountDropdown">
+                        <a class="dropdown-item" href="#">View Profile</a>
+                        <a class="dropdown-item" href="#">Update Profile</a>
+                        <a class="dropdown-item" href="#">Account Status</a>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Contributions
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
+                        <a class="dropdown-item" href="#">Send contributions</a>
+                        <a class="dropdown-item" href="#">View Total Contributions</a>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Loans
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="loansDropdown">
+                        <a class="dropdown-item" href="#">View loan status</a>
+                        <a class="dropdown-item" href="#">Apply for loan</a>
+                        <a class="dropdown-item" href="#">Pay for loan</a>
+                    </div>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Penalties
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
+                        <a class="dropdown-item" href="#">View Paid Penalties</a>
+                        <a class="dropdown-item" href="#">View Unpaid Penalties</a>
+                        <a class="dropdown-item" href="#">Pay Penalties</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Notifications</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="#"><i class="fas fa-bell"></i>
+                        <span class="notification-badge"><?php echo $total_notifications; ?></span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#"><i class="fas fa-cog"></i></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="confirmLogout()"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+                </li>
+            </ul>
+            
+        </div>
+    </nav>
 
     <!-- Profile Card -->
     <div class="container mt-5">
@@ -436,7 +424,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     return true; // Allow form submission
 }
-
 
     </script>
 
