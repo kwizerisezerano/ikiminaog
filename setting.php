@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bindParam(':image', $upload_path);
                 $stmt->bindParam(':id', $user_id);
                 if ($stmt->execute()) {
-                    header("Location: setting.php"); // Redirect to the profile page after upload
+                    header("Location: user_profile.php"); // Redirect to the profile page after upload
                     exit();
                 } else {
                     $errors[] = "Failed to update the image in the database.";
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($stmt->execute()) {
                 $success_message = "Profile updated successfully!";
-                header("Location: setting.php"); // Redirect to profile page
+                header("Location: user_profile.php"); // Redirect to profile page
                 exit();
             } else {
                 $errors[] = "Failed to update profile in the database.";
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-<!-- Navbar -->
+  <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
@@ -198,7 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     Join Ikimina
                 </a>
                 <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                    <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
+                   <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
                     <a class="dropdown-item" href="#">Available list of Ibimina you may join</a>
                     <a class="dropdown-item" href="#">List of Ibimina you have joined</a>
                 </div>
@@ -273,6 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </ul>
     </div>
 </nav>
+
 
 
     <!-- Profile Card -->
