@@ -12,7 +12,6 @@ ini_set('display_errors', 1);
 $firstname = isset($_POST['firstname']) ? trim($_POST['firstname']) : '';
 $lastname = isset($_POST['lastname']) ? trim($_POST['lastname']) : '';
 $phone_number = isset($_POST['phone_number']) ? trim($_POST['phone_number']) : '';
-
 $password = isset($_POST['password']) ? trim($_POST['password']) : '';
 $terms_agreed = isset($_POST['terms']) ? 1 : 0; // Will be 1 if checked, 0 if not
 
@@ -20,9 +19,46 @@ $terms_agreed = isset($_POST['terms']) ? 1 : 0; // Will be 1 if checked, 0 if no
 $response = ['error' => false, 'message' => ''];
 
 // Validate inputs
-if (empty($firstname) || empty($lastname) || empty($phone_number)  || empty($password)) {
+if (empty($firstname) || empty($lastname) || empty($phone_number) || empty($password)) {
     $response['error'] = true;
     $response['message'] = 'All fields are required.';
+    echo json_encode($response);
+    exit;
+}
+
+// Validate Firstname
+if (!preg_match("/^[a-zA-Z\s]+$/", $firstname)) {
+    $response['error'] = true;
+    $response['message'] = 'Firstname must only contain letters and spaces.';
+    echo json_encode($response);
+    exit;
+}
+
+// Validate Lastname
+if (!preg_match("/^[a-zA-Z\s]+$/", $lastname)) {
+    $response['error'] = true;
+    $response['message'] = 'Lastname must only contain letters and spaces.';
+    echo json_encode($response);
+    exit;
+}
+
+// Validate Phone Number
+if (!preg_match("/^\d{10,15}$/", $phone_number)) {
+    $response['error'] = true;
+    $response['message'] = 'Phone number must be between 10 and 15 digits.';
+    echo json_encode($response);
+    exit;
+}
+
+// Validate Password
+if (strlen($password) < 8 || 
+    !preg_match('/[A-Z]/', $password) || // Uppercase letter
+    !preg_match('/[a-z]/', $password) || // Lowercase letter
+    !preg_match('/[0-9]/', $password) || // Digit
+    !preg_match('/[\W_]/', $password)    // Special character
+) {
+    $response['error'] = true;
+    $response['message'] = 'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.';
     echo json_encode($response);
     exit;
 }
@@ -43,8 +79,8 @@ $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 $otp = rand(100000, 999999); // Generate a random 6-digit OTP
 
 // Insert new user into the database
-$sql = "INSERT INTO users (firstname, lastname, phone_number,password, otp, verified, otp_used, otp_login, terms, created_at) 
-        VALUES (:firstname, :lastname, :phone_number,  :password, :otp, 0, 0, 0, :terms, NOW())";
+$sql = "INSERT INTO users (firstname, lastname, phone_number, password, otp, verified, otp_used, otp_login, terms, created_at) 
+        VALUES (:firstname, :lastname, :phone_number, :password, :otp, 0, 0, 0, :terms, NOW())";
 
 try {
     $stmt = $pdo->prepare($sql);
@@ -52,14 +88,11 @@ try {
         ':firstname' => $firstname,
         ':lastname' => $lastname,
         ':phone_number' => $phone_number,
-      
         ':password' => $hashedPassword,
         ':otp' => $otp,
         ':terms' => $terms_agreed // Inserts 1 if checked, 0 if not
     ]);
 
-    // Here you would send the OTP to the user's phone number
-    // Uncomment and implement your SMS sending logic if necessary
     // Message for OTP verification
     $sms_message = "
         Dear $firstname,\n
@@ -72,11 +105,10 @@ try {
     // Attempt to send SMS
     if (!hdev_sms::send('N-SMS', $phone_number, $sms_message)) {
         $response['error'] = true;
-        $response['message'] = 'Failed to send SMS.';
+        $response['message'] = 'Failed to send SMS. Check your SMS service provider settings.';
         echo json_encode($response);
         exit;
     }
-
 
     $response['message'] = 'Registration successful! A verification OTP has been sent to your phone.';
     echo json_encode($response);
