@@ -195,10 +195,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Join Ikimina
+                    Tontine
                 </a>
                 <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
                    <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
+                     <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
                     <a class="dropdown-item" href="#">Available list of Ibimina you may join</a>
                     <a class="dropdown-item" href="#">List of Ibimina you have joined</a>
                 </div>
