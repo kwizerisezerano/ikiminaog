@@ -288,7 +288,7 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
                             </div>
                 
                             <div class="form-group">
-                                <label for="contributions">Total Paid Up Contributions *</label>
+                                <label for="contributions">Contributions per place *</label>
                                 <input type="number" class="form-control" id="contributions" name="contributions" required>
                             </div>
                             <div class="form-group">

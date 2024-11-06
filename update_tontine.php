@@ -23,7 +23,7 @@ $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
 $total_notifications = 5;
 
 // Fetch tontine details to pre-fill the form
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, member_list, purpose, rules FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date,  purpose, rules FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <textarea rows="1" class="form-control" id="rules" name="rules" required><?php echo htmlspecialchars($tontine['rules']); ?></textarea>
         </div>
         <div class="mb-3">
-            <label for="total_contributions" class="form-label">Total Contributions</label>
+        <label for="total_contributions" class="form-label">Contribution per place</label>
             <input type="number" class="form-control" id="total_contributions" name="total_contributions" value="<?php echo htmlspecialchars($tontine['total_contributions']); ?>" required>
         </div>
         <div class="mb-3">

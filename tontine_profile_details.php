@@ -55,10 +55,7 @@ switch (strtolower($tontine['occurrence'])) {
         break;
 }
 
-// Query to get the members of the tontine
-$stmtMembers = $pdo->prepare("SELECT member_list FROM tontine WHERE id = :tontine_id");
-$stmtMembers->execute(['tontine_id' => $id]);
-$members = $stmtMembers->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <!DOCTYPE html>

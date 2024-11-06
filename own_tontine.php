@@ -31,7 +31,7 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        .notification-badge {
+         .notification-badge {
             position: absolute;
             top: -5px;
             right: -0px;
@@ -41,42 +41,47 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
             padding: 2px 5px;
             font-size: 0.80rem;
         }
-        body {
-            background-color: #f8f9fa;
-        }
+        body { background-color: #f8f9fa; }
+        
+        /* Container for each tontine card */
         .tontine-card {
             display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
             box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
-            border-radius: 8px;
-            background-color: #fff;
-            padding: 1rem;
-            align-items: center;
         }
+        
+        /* Logo styling */
         .tontine-logo {
             width: 80px;
             height: 80px;
-            object-fit: contain;
-            margin-right: 1rem;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-right: 15px;
         }
+        
+        /* Content on the right of the logo */
         .card-content {
             flex: 1;
         }
-        .card-title {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
+        
+        /* Card buttons */
         .card-buttons {
-            display: flex;
-            justify-content: flex-start;
-            gap: 10px;
             margin-top: 10px;
+        }
+
+        .btn-custom {
+            font-size: 0.9rem;
+            margin-right: 5px;
         }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+ <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -167,92 +172,88 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
         </ul>
     </div>
 </nav>
+<div class="container">
+    <h5 class="text-center mt-4">Tontines Created by <?php echo htmlspecialchars($user_name); ?></h5>
+    
+    <!-- Search Bar -->
+    <div class="form-group">
+        <input type="text" id="search" class="form-control" placeholder="Search Tontines by name..." onkeyup="searchTontines()">
+    </div>
 
-    <div class="container">
-        
-        <h5 class="text-center mt-4">Tontines Created by <?php echo htmlspecialchars($user_name); ?></h5>
+    <!-- Tontine Cards List -->
+    <div class="row" id="tontine-list">
+        <?php foreach ($tontines as $tontine): ?>
+            <div class="col-md-4 tontine-item">
+                <div class="tontine-card">
+                    <img src="<?php echo htmlspecialchars($tontine['logo']); ?>" alt="Tontine Logo" class="tontine-logo">
+                    <div class="card-content">
+                        <h6 class="card-title"><?php echo htmlspecialchars($tontine['tontine_name']); ?></h6>
+                        <p><strong>Province:</strong> <?php echo htmlspecialchars($tontine['province']); ?></p>
+                        <p><strong>District:</strong> <?php echo htmlspecialchars($tontine['district']); ?></p>
+                        <p><strong>Sector:</strong> <?php echo htmlspecialchars($tontine['sector']); ?></p>
+                        <p><strong>Total Contributions:</strong> <?php echo htmlspecialchars($tontine['total_contributions']); ?></p>
+                        <p><strong>Rules:</strong> <?php echo htmlspecialchars($tontine['rules']); ?></p>
+                        <p><strong>Purpose:</strong> <?php echo htmlspecialchars($tontine['purpose']); ?></p>
+                        
+                        <?php
+                        // Display occurrence-based information
+                        if ($tontine['occurrence'] == 'Daily') {
+                            echo "<p><strong>Occurrence:</strong> Daily at " . htmlspecialchars($tontine['time']) . "</p>";
+                        } elseif ($tontine['occurrence'] == 'Weekly') {
+                            echo "<p><strong>Occurrence:</strong> Weekly on " . htmlspecialchars($tontine['day']) . "</p>";
+                        } elseif ($tontine['occurrence'] == 'Monthly') {
+                            echo "<p><strong>Occurrence:</strong> Monthly on " . htmlspecialchars($tontine['date']) . "</p>";
+                        }
+                        ?>
 
-        <!-- Search Bar -->
-        <div class="form-group">
-            <input type="text" id="search" class="form-control" placeholder="Search Tontines by name..." onkeyup="searchTontines()">
-        </div>
-
-        <div class="row" id="tontine-list">
-            <?php foreach ($tontines as $tontine): ?>
-                <?php 
-                    $occurrenceDisplay = '';
-                    switch (strtolower($tontine['occurrence'])) {
-                        case 'daily':
-                            $occurrenceDisplay = '<p><strong>Time:</strong> ' . htmlspecialchars($tontine['time']) . '</p>';
-                            break;
-                        case 'weekly':
-                            $occurrenceDisplay = '<p><strong>Day:</strong> ' . htmlspecialchars($tontine['day']) . '</p>';
-                            break;
-                        case 'monthly':
-                            $occurrenceDisplay = '<p><strong>Date:</strong> ' . htmlspecialchars($tontine['date']) . '</p>';
-                            break;
-                        default:
-                            $occurrenceDisplay = '<p><strong>Occurrence:</strong> ' . htmlspecialchars($tontine['occurrence']) . '</p>';
-                            break;
-                    }
-                ?>
-                <div class="col-md-4">
-                    <div class="tontine-card">
-                        <img src="<?php echo htmlspecialchars($tontine['logo']); ?>" alt="Tontine Logo" class="tontine-logo">
-                        <div class="card-content">
-                            <h6 class="card-title"><?php echo htmlspecialchars($tontine['tontine_name']); ?></h6>
-                            <p><strong>Province:</strong> <?php echo htmlspecialchars($tontine['province']); ?></p>
-                            <p><strong>District:</strong> <?php echo htmlspecialchars($tontine['district']); ?></p>
-                            <p><strong>Sector:</strong> <?php echo htmlspecialchars($tontine['sector']); ?></p>
-                            <p><strong>Total Contributions:</strong> <?php echo htmlspecialchars($tontine['total_contributions']); ?></p>
-                            <p><strong>Rules:</strong> <?php echo htmlspecialchars($tontine['rules']); ?></p>
-                            <p><strong>Purpose:</strong> <?php echo htmlspecialchars($tontine['purpose']); ?></p>
-                            <?php echo $occurrenceDisplay; ?>
-                            <div class="card-buttons">
-                                <a href="update_tontine.php?id=<?php echo $tontine['id']; ?>" class="btn btn-warning btn-sm">Edit</a>
-                                <a href="delete_tontine.php?id=<?php echo $tontine['id']; ?>" class="btn btn-danger btn-sm">Delete</a>
-                            </div>
+                        <div class="card-buttons">
+                            <button class="btn btn-info btn-custom" onclick="updateTontine(<?php echo $tontine['id']; ?>)">Update</button>
+                            <button class="btn btn-danger btn-custom" onclick="deleteTontine(<?php echo $tontine['id']; ?>)">Delete</button>
                         </div>
                     </div>
                 </div>
-            <?php endforeach; ?>
-        </div>
+            </div>
+        <?php endforeach; ?>
     </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    
-    <script>
-        function confirmLogout() {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "You will be logged out!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, log me out!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'logout.php';
-                }
-            });
-        }
+<script>
+    function updateTontine(id) {
+        window.location.href = "update_tontine.php?id=" + id;
+    }
 
-        function searchTontines() {
-            let input = document.getElementById('search').value.toLowerCase();
-            let tontineList = document.getElementById('tontine-list').children;
-
-            for (let i = 0; i < tontineList.length; i++) {
-                let tontineName = tontineList[i].querySelector('.card-title').innerText.toLowerCase();
-                if (tontineName.includes(input)) {
-                    tontineList[i].style.display = '';
-                } else {
-                    tontineList[i].style.display = 'none';
-                }
+    function deleteTontine(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "delete_tontine.php?id=" + id;
             }
-        }
-    </script>
+        });
+    }
+
+    function searchTontines() {
+        let input = document.getElementById('search').value.toLowerCase();
+        let tontineList = document.querySelectorAll('.tontine-item');
+
+        tontineList.forEach(function (item) {
+            let tontineName = item.querySelector('.card-title').textContent.toLowerCase();
+            if (tontineName.includes(input)) {
+                item.style.display = "block";
+            } else {
+                item.style.display = "none";
+            }
+        });
+    }
+</script>
 </body>
 </html>

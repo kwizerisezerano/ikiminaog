@@ -214,41 +214,44 @@ $total_notifications = 5;
 
     <h5>Recent Tontines</h5>
     <div class="row recent-tontines">
-        <?php
-        // Fetch the 3 most recent tontines
-        $recentQuery = $pdo->query("SELECT * FROM tontine ORDER BY join_date DESC LIMIT 3");
+    <?php
+    // Fetch the 3 most recently created tontines based on the created_at field
+    $recentQuery = $pdo->query("SELECT * FROM tontine ORDER BY created_at DESC LIMIT 3");
 
-        while ($tontine = $recentQuery->fetch(PDO::FETCH_ASSOC)) {
-            $logo = !empty($tontine['logo']) ? $tontine['logo'] : 'default-logo.png'; // Default logo if none is provided
-            $timeInfo = '';
-            if ($tontine['occurrence'] == 'monthly') {
-                $timeInfo = "<i class='fas fa-calendar-alt icon'></i> Date: {$tontine['join_date']}";
-            } elseif ($tontine['occurrence'] == 'weekly') {
-                $timeInfo = "<i class='fas fa-clock icon'></i> Day: {$tontine['day']}";
-            } elseif ($tontine['occurrence'] == 'daily') {
-                $timeInfo = "<i class='fas fa-clock icon'></i> Time: {$tontine['time']}";
-            }
-
-            echo "
-            <div class='col-md-4'>
-                <div class='job-card'>
-                    <img src='$logo' alt='Tontine Logo' class='job-logo'>
-                    <div class='job-info'>
-                        <span class='company-name'>{$tontine['tontine_name']}</span>
-                        <div class='job-title'>{$tontine['purpose']} [{$tontine['occurrence']}]</div>
-                        <div class='details'>
-                            <i class='fas fa-map-marker-alt icon'></i>{$tontine['province']}, {$tontine['district']}, {$tontine['sector']}
-                        </div>
-                        <div class='timer mt-2'>
-                            $timeInfo
-                        </div>
-                        <button class='btn btn-outline-primary mt-2' onclick='showTontineDetails(\"" . json_encode($tontine) . "\")'>View Details</button>
-                    </div>
-                </div>
-            </div>";
+    while ($tontine = $recentQuery->fetch(PDO::FETCH_ASSOC)) {
+        $logo = !empty($tontine['logo']) ? $tontine['logo'] : 'default-logo.png';
+        $timeInfo = '';
+        if ($tontine['occurrence'] == 'monthly') {
+            $timeInfo = "<i class='fas fa-calendar-alt icon'></i> Date: {$tontine['created_at']}";
+        } elseif ($tontine['occurrence'] == 'weekly') {
+            $timeInfo = "<i class='fas fa-clock icon'></i> Day: {$tontine['day']}";
+        } elseif ($tontine['occurrence'] == 'daily') {
+            $timeInfo = "<i class='fas fa-clock icon'></i> Time: {$tontine['time']}";
         }
-        ?>
-    </div>
+
+        echo "
+        <div class='col-md-4'>
+            <div class='job-card'>
+                <img src='$logo' alt='Tontine Logo' class='job-logo'>
+                <div class='job-info'>
+                    <span class='company-name'>{$tontine['tontine_name']}</span>
+                    <div class='job-title'>{$tontine['purpose']} [{$tontine['occurrence']}]</div>
+
+                   
+                    <div class='timer'>$timeInfo</div>
+                    <div class='details'>
+                        <i class='fas fa-map-marker-alt icon'></i>{$tontine['province']}, {$tontine['district']}, {$tontine['sector']}
+                    </div>
+                   <button class='btn btn-outline-primary  mt-2' onclick='showTontineDetails(" . json_encode($tontine) . ")'>View Details</button>
+                </div>
+            </div>
+        </div>
+        ";
+    }
+    ?>
+</div>
+
+
     <h5>All Tontines</h5>
     <div class="job-listings">
         <?php
@@ -278,7 +281,7 @@ $total_notifications = 5;
                     <div class='timer mt-2'>
                         $timeInfo
                     </div>
-                    <button class='btn btn-outline-primary mt-2' onclick='showTontineDetails(\"" . json_encode($tontine) . "\")'>View Details</button>
+                    <button class='btn btn-outline-primary mt-2' onclick='showTontineDetails(" . json_encode($tontine) . ")'>View Details</button>
                 </div>
             </div>";
         }
@@ -286,10 +289,58 @@ $total_notifications = 5;
     </div>
 </div>
 
+
     <!-- Remaining content goes here -->
 
     <script>
-   
+function showTontineDetails(tontine) {
+    // Fallback to a default logo if none is provided
+    const logoUrl = tontine.logo ? tontine.logo : 'path/to/default/logo.png';
+
+    // Determine the contribution occurrence display
+    let occurrenceDisplay;
+    if (tontine.occurrence === 'Daily') {
+        occurrenceDisplay = `Every day at ${tontine.time}`;
+    } else if (tontine.occurrence === 'Weekly') {
+        occurrenceDisplay = `Every week on ${tontine.day}`;
+    } else if (tontine.occurrence === 'Monthly') {
+        occurrenceDisplay = `Every month on ${tontine.date}`;
+    }
+
+    Swal.fire({
+        html: `
+            <div style="display: flex; align-items: center; padding: 20px;">
+                <img src="${logoUrl}" alt="${tontine.tontine_name} Logo" style="width: 100px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); margin-right: 20px;">
+                <div style="width: 100%; text-align: left;">
+                    <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">
+                        ${tontine.tontine_name}
+                    </div>
+                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Purpose:</strong> ${tontine.purpose}</p>
+                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Occurrence:</strong> ${occurrenceDisplay}</p>
+                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Location:</strong> ${tontine.province}, ${tontine.district}, ${tontine.sector}</p>
+                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Start Date:</strong> ${tontine.join_date}</p>
+                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Rules:</strong> ${tontine.rules}</p>
+                </div>
+            </div>
+        `,
+        icon: 'info',
+        showCancelButton: false,
+        confirmButtonText: '<span style="padding: 5px 15px;">Join</span>',
+        customClass: {
+            popup: 'swal-popup',
+            confirmButton: 'swal-confirm-button'
+        },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Redirect to Join_tontine.php with the tontine ID as a query parameter
+            window.location.href = `Join_tontine.php?id=${tontine.id}`;
+        }
+    });
+}
+
+
+
+
         function searchTontines() {
     // Get the value from the search input
     const searchInput = document.getElementById('search').value.toLowerCase();
