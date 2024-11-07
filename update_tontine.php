@@ -176,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             confirmButtonText: 'OK'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = 'tontine_profile_details.php?id=<?php echo $id; ?>';
+                window.location.href = 'tontine_profile.php?id=<?php echo $id; ?>';
             }
         });
     <?php elseif ($message): ?>

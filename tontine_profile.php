@@ -10,13 +10,14 @@ if (!isset($_SESSION['user_id'])) {
 
 // Fetch user details
 $user_id = $_SESSION['user_id'];
-$stmt = $pdo->prepare("SELECT firstname, lastname FROM users WHERE id = :id");
+$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number FROM users WHERE id = :id");
 $stmt->bindParam(':id', $user_id);
 $stmt->execute();
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // Sanitize user data
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
+$user_contact = htmlspecialchars($user['phone_number']); // User contact fetched from database
 $total_notifications = 5;
 
 // Get ID dynamically from query string or default to 1
@@ -45,8 +46,9 @@ if (!$sectorExists) {
     </script>";
     exit();
 }
+
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -54,6 +56,14 @@ $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$tontine) {
     die("Tontine details not found.");
 }
+
+// Fetch contact of the user who created the tontine (Admin role)
+$creator_id = $tontine['user_id'];
+$stmt = $pdo->prepare("SELECT phone_number FROM users WHERE id = :id");
+$stmt->bindParam(':id', $creator_id);
+$stmt->execute();
+$creator = $stmt->fetch(PDO::FETCH_ASSOC);
+$creator_contact = htmlspecialchars($creator['phone_number']);
 
 // Build the path for the logo image
 $logoFilePath = htmlspecialchars($tontine['logo']);
@@ -77,238 +87,341 @@ switch (strtolower($tontine['occurrence'])) {
         $occurrenceDisplay = '<p><strong>Occurrence:</strong> ' . htmlspecialchars($tontine['occurrence']) . '</p>';
         break;
 }
+if (isset($_GET['id'])) {
+    $id = (int) $_GET['id'];
+    
+    // Query to check if the ID exists in the tontine table
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM tontine WHERE id = :id");
+    $stmt->execute(['id' => $id]);
+    $exists = $stmt->fetchColumn() > 0;
+}
+  
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tontine Profile</title>
-   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -0px;
-            background-color: red;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 5px;
-            font-size: 0.80rem;
+
+.left-section a{
+    text-decoration: none;
+}
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body styling */
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background-color: #f0f0f0;
+}
+
+        .container {
+            display: flex;
+            max-width: 1200px;
+            width: 100%;
+            padding: 1px 20px;
+            margin-top: -20px;
         }
-        body {
-            background-image: url('path/to/background-image.jpg'); /* Replace with the actual path to your background image */
+        .left-section {
+  flex: 1; /* Takes up available width */
+  padding: 20px;
+  background-color: #f9f9f9;
+  overflow: auto; /* Allows scrolling within if content overflows */
+  height: auto; /* Adjust height based on content */
+  min-height: 0; /* Ensures the section does not grow larger than its container */
+  height:  80vh;
+}
+
+        .right-section {
+  flex: 1; /* Takes up 50% of the available width */
+  padding: 20px;
+  background-color: #ffffff;
+  overflow-y: auto; /* Allows vertical scroll within the section if necessary */
+  max-height: 100vh; 
+  box-sizing: border-box;
+}
+
+
+        .cover-photo {
+            width: 100%;
+            height: 150px;
+            background-image: url('BACKROUNDS/T3.jpg');
             background-size: cover;
-            background-attachment: fixed;
             background-position: center;
-            font-family: Arial, sans-serif;
-            color: #333;
+            background-repeat: no-repeat;
+            position: relative;
         }
-        .profile-container {
-            margin: 20px auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            max-width: 800px;
-            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background for readability */
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        .tontine-info {
+            position: relative;
+            padding-top: 40px;
+            margin-left: 110px;
         }
-        .profile-header {
-            font-size: 24px;
+        .tontine-logo {
+            width: 100px;
+            height: 100px;
+            background-color: #002f6c;
+            border-radius: 10px;
+            position: absolute;
+            top: -30px;
+            margin-left: -80px;
+            z-index: 1;
+            background-image: url('<?php echo $logoFilePath; ?>');
+            background-size: cover;
+            background-position: center;
+        }
+        .tontine-details {
+            padding-left: 50px;
+            margin-top: -30px;
+        }
+        .tontine-details h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .button-container {
+  display: flex; /* Align buttons horizontally */
+  flex-wrap: wrap; /* Allow wrapping if there isn't enough space */
+  gap: 3px; /* Space between buttons */
+  justify-content: flex-start; /* Align buttons to the left */
+}
+
+.button-container .btn {
+  font-size: 13px; /* Reduce font size */
+  padding: 8px 4px; /* Adjust padding for a smaller button */
+  width: auto; /* Allow width to adjust based on text */
+}
+
+.button-container .btn i {
+  font-size: 16px; /* Adjust icon size */
+}
+
+      
+       
+        .custom-button:hover {
+            opacity: 0.9;
+            text-decoration: none;
+        }
+        .right-section {
+            flex: 1;
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 5px 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            /* margin: 10px; */
+        }
+        .section-title {
             font-weight: bold;
-            margin-bottom: 10px;
-            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .profile-logo {
-            width: 150px;
-            height: auto;
-            margin-bottom: 15px;
-            border-radius: 8px;
+        .section-title i {
+            color: #007bff;
         }
-        .profile-info p {
-            font-size: 16px;
+        .info-section p {
             margin: 5px 0;
         }
-        .profile-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
+      
+        .edit-icon {
+           margin-left: 10px; /* Adjust the gap between icon and content */ /* position: absolute; */
+            
+            cursor: pointer;
+            position: absolute;
         }
-        .btn-custom {
-            font-size: 14px;
-            padding: 8px 12px;
-            min-width: 110px;
-        }
+         .edit-field,.edit-field1{
+           
+            border: none;
+            /* display: flex; */
+    /* align-items: center; */
+    outline: none;
+            
+         }
+         .right-section h6{
+            font-weight: bold;
+         }
+         .right-section p{
+            font-size: 1rem;
+         }
     </style>
 </head>
 <body>
-   <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-       
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Tontine
-                </a>
-                <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                   <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
-                     <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                    <a class="dropdown-item" href="#">Available list of Ibimina you may join</a>
-                    <a class="dropdown-item" href="#">List of Ibimina you have joined</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="accountDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Account
-                </a>
-                <div class="dropdown-menu" aria-labelledby="accountDropdown">
-                    <a class="dropdown-item" href="#">View Profile</a>
-                    <a class="dropdown-item" href="#">Update Profile</a>
-                    <a class="dropdown-item" href="#">Account Status</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Contributions
-                </a>
-                <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
-                    <a class="dropdown-item" href="#">Send contributions</a>
-                    <a class="dropdown-item" href="#">View Total Contributions</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Loans
-                </a>
-                <div class="dropdown-menu" aria-labelledby="loansDropdown">
-                    <a class="dropdown-item" href="#">View loan status</a>
-                    <a class="dropdown-item" href="#">Apply for loan</a>
-                    <a class="dropdown-item" href="#">Pay for loan</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Penalties
-                </a>
-                <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
-                    <a class="dropdown-item" href="#">View Paid Penalties</a>
-                    <a class="dropdown-item" href="#">View Unpaid Penalties</a>
-                    <a class="dropdown-item" href="#">Pay Penalties</a>
-                </div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
-            </li>
-        </ul>
-
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="#">
-                    <i class="fas fa-user"></i> 
-                    <?php echo htmlspecialchars($user_name); ?>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link position-relative font-weight-bold text-white" href="#">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge"><?php echo $total_notifications; ?></span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="setting.php">
-                    <i class="fas fa-cog"></i>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="#" onclick="confirmLogout()">
-                    <i class="fas fa-sign-out-alt"></i> Log Out
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
-
 
 <div class="container">
-    <div class="profile-container">
-        <div class="row">
-            <!-- Logo on the left -->
-            <div class="col-md-4 text-center">
-                <img src="<?php echo $logoFilePath; ?>" alt="Logo" class="profile-logo">
-            </div>
-
-            <!-- Tontine details on the right -->
-            <div class="col-md-8">
-                <div class="profile-header">
-                    <?php echo htmlspecialchars($tontine['tontine_name']); ?>
-                </div>
-                <div class="profile-info">
-                    <p><strong>Location:</strong> <?php echo htmlspecialchars($tontine['province'] . ', ' . $tontine['district'] . ', ' . $tontine['sector']); ?></p>
-                    <p><strong>Join Date:</strong> <?php echo htmlspecialchars($tontine['join_date']); ?></p>
-                    <p><strong>Total Contributions:</strong> <?php echo number_format($tontine['total_contributions'], 2); ?> RWF</p>
-                    <?php echo $occurrenceDisplay; ?>
-                </div>
+    <!-- Left Section -->
+    <div class="left-section">
+        <!-- Cover Photo and Tontine Info -->
+        <div class="cover-photo"></div>
+        <div class="tontine-info">
+            <div class="tontine-logo"></div>
+            <div class="tontine-details">
+                <h2><?php echo htmlspecialchars($tontine['tontine_name']); ?></h2>
+                <p><strong>Province: </strong><?php echo htmlspecialchars($tontine['province']); ?> ,<strong> District:</strong> <?php echo htmlspecialchars($tontine['district']); ?> ,<strong> Sector: </strong><?php echo htmlspecialchars($tontine['sector']); ?></p>
+                <p><strong>Total Contributions:</strong> <?php echo number_format($tontine['total_contributions']); ?> Rwf</p>
+                    <p><strong>Occurence:</strong> <?php echo htmlspecialchars($tontine['occurrence']); ?> </p>
+                <?php echo $occurrenceDisplay; ?>
             </div>
         </div>
 
-        <!-- Buttons below content -->
-        <div class="profile-buttons">
-         
-            <button class="btn btn-info btn-custom" onclick="updateTontine()">Update</button>
-            <button class="btn btn-danger btn-custom" onclick="deleteTontine()">Delete</button>
-        </div>
-    </div>
+        <!-- Buttons for Actions -->
+        <div class="button-container d-flex justify-content-start">
+    <button type="button" class="btn btn-primary btn-verification">
+        <a href="user_profile.php" class="text-white">Home</a>
+    </button>
+    <button type="button" class="btn btn-primary btn-verification">
+        Request Verification
+    </button>
+    <button type="button" class="btn btn-info btn-delete">
+        Join Us
+    </button>
+    <button type="button" class="btn btn-success btn-manage-contributions">
+        Contributions
+    </button>
+    <button type="button" class="btn btn-info btn-manage-loans">
+        Loans
+    </button>
+    <button type="button" class="btn btn-warning btn-manage-penalties">
+        Penalties
+    </button>
+   <!-- Update Button -->
+<button type="button" class="btn btn-secondary btn-update" onclick="confirmUpdate()">
+    <i class="fas fa-edit"></i> 
+</button>
+
+<!-- Delete Button -->
+<button type="button" class="btn btn-danger btn-delete" onclick="confirmDelete()">
+    <i class="fas fa-trash-alt"></i> 
+</button>
+<button type="button" class="btn btn-danger btn-verification">
+        <a href="user_profile.php" class="text-white"><i class="fas fa-bell "></i></a>
+    </button>
+
 </div>
 
+
+    </div>
+
+    <!-- Right Section -->
+<div class="right-section p-3">
+    <!-- Contact Section -->
+    <div class="info-section border-bottom mb-1 pb-1">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="section-title text-info">Contact Information</h6>
+           
+        </div>
+        <p class="mb-1"><strong>Created by:</strong> <?php echo htmlspecialchars($user_name); ?></p>
+        <p><strong>Contact:</strong> <?php echo htmlspecialchars($user_contact); ?></p>
+    </div>
+
+    <!-- Contributions, Loans, Penalties Section -->
+    <div class="info-section border-bottom mb-1 pb-1">
+        <div class="section-item mb-1">
+            <h6 class="text-info">Contributions</h6>
+            <p><strong> Contribution per place:</strong> <?php echo number_format($tontine['total_contributions']); ?> Rwf</p>
+        </div>
+
+        <div class="section-item mb-1">
+            <h6 class="text-info">Loans</h6>
+            <p><strong>Interest Rate:</strong> 5%</p>
+          
+        </div>
+
+        <div class="section-item mb-1 pb-1">
+            <h6 class="text-info">Penalties</h6>
+            <p><strong>Late Fee:</strong> 100 RWF per day</p>
+            <p><strong>Missed Contributions:</strong> Subject to review</p>
+        </div>
+    </div>
+
+    <!-- Purpose & Rules Section -->
+    <div class="about-section border-bottom mb-1 pb-1">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <h6 class="section-title text-info">Purpose</h6>
+          
+        </div>
+     <div class="edit-field mb-1 space-between" contenteditable="true">
+    Raise Each Other
+    <i class="fas fa-pencil-alt edit-icon text-info" onclick="enableEdit(this)"></i>
+
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h6 class="section-title text-info">Rules</h6>
+</div>
+
+<div class="edit-field1" contenteditable="true">
+    Follow each rule, contribute on time, and repay loans promptly.
+    <i class="fas fa-pencil-alt edit-icon text-info" onclick="enableEdit(this)"></i>
+</div>
+
+    </div>
+
+   
+
 <script>
-    function updateTontine() {
-        window.location.href = "update_tontine.php?id=<?php echo $id; ?>"; // Redirect to the update page
-    }
 
-    function deleteTontine() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "This action cannot be undone!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "delete_tontine.php?id=<?php echo $id; ?>"; // Redirect to the delete page
-            }
-        });
-    }
+// Function to show delete confirmation
+function confirmDelete() {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'No, keep it'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Perform the deletion
+            window.location.href = 'delete_tontine.php?id=' + <?php echo $id; ?>;
+        }
+    });
+}
 
-    function confirmLogout() {
-        Swal.fire({
-            title: 'Are you sure you want to log out?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, log out'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "logout.php"; // Redirect to the logout page
-            }
-        });
-    } 
+// Function to show the update modal
+function confirmUpdate() {
+    // Open your modal or form for editing
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to update tontine",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Update it!',
+        cancelButtonText: 'No, ',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Perform the deletion
+            window.location.href = 'update_tontine.php?id=' + <?php echo $id; ?>;
+        }
+    });
+   
+}
+
+
+function enableEdit(element) {
+    const field = element.closest('.about-section').querySelector('.edit-field');
+    field.focus();
+    field.style.border = '1px solid #007bff';
+    field.onblur = () => {
+        field.style.border = '1px solid #ccc';
+    };
+}
 </script>
 
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

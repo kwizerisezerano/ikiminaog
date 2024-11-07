@@ -235,8 +235,8 @@ $total_notifications = 5;
                 <img src='$logo' alt='Tontine Logo' class='job-logo'>
                 <div class='job-info'>
                     <span class='company-name'>{$tontine['tontine_name']}</span>
-                    <div class='job-title'>{$tontine['purpose']} [{$tontine['occurrence']}]</div>
-
+               
+     <div class='job-title'>Contribution:{$tontine['total_contributions']}RWF/Place [{$tontine['occurrence']}]</div>
                    
                     <div class='timer'>$timeInfo</div>
                     <div class='details'>
@@ -274,7 +274,7 @@ $total_notifications = 5;
                 <img src='$logo' alt='Tontine Logo' class='job-logo'>
                 <div class='job-info'>
                     <span class='company-name'>{$tontine['tontine_name']}</span>
-                    <div class='job-title'>{$tontine['purpose']} [{$tontine['occurrence']}]</div>
+                    <div class='job-title'>{$tontine['total_contributions']} [{$tontine['occurrence']}]</div>
                     <div class='details'>
                         <i class='fas fa-map-marker-alt icon'></i>{$tontine['province']}, {$tontine['district']}, {$tontine['sector']}
                     </div>
@@ -316,6 +316,7 @@ function showTontineDetails(tontine) {
                         ${tontine.tontine_name}
                     </div>
                     <p style="margin: 8px 0; font-size: 1rem;"><strong>Purpose:</strong> ${tontine.purpose}</p>
+                     <p style="margin: 8px 0; font-size: 1rem;"><strong>Contribution per place:</strong> ${tontine.total_contributions}</p>
                     <p style="margin: 8px 0; font-size: 1rem;"><strong>Occurrence:</strong> ${occurrenceDisplay}</p>
                     <p style="margin: 8px 0; font-size: 1rem;"><strong>Location:</strong> ${tontine.province}, ${tontine.district}, ${tontine.sector}</p>
                     <p style="margin: 8px 0; font-size: 1rem;"><strong>Start Date:</strong> ${tontine.join_date}</p>

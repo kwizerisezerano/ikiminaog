@@ -205,11 +205,13 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
                             echo "<p><strong>Occurrence:</strong> Monthly on " . htmlspecialchars($tontine['date']) . "</p>";
                         }
                         ?>
+<div class="card-buttons d-flex justify-content-start">
+   
+    <button class="btn btn-info btn-custom" onclick="window.location.href='tontine_profile.php?id=<?php echo $tontine['id']; ?>'">
+        <i class="fas fa-user-circle"></i>  Profile
+    </button>
+</div>
 
-                        <div class="card-buttons">
-                            <button class="btn btn-info btn-custom" onclick="updateTontine(<?php echo $tontine['id']; ?>)">Update</button>
-                            <button class="btn btn-danger btn-custom" onclick="deleteTontine(<?php echo $tontine['id']; ?>)">Delete</button>
-                        </div>
                     </div>
                 </div>
             </div>
