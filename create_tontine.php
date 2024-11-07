@@ -292,20 +292,24 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
                                 <input type="number" class="form-control" id="contributions" name="contributions" required>
                             </div>
                             <div class="form-group">
-    <label for="occurrence">Contribution Occurrence *</label>
-    <select id="occurrence" name="occurrence" class="form-control" required>
+    <label for="occurrence">Occurrence</label>
+    <select id="occurrence" name="occurrence" class="form-control">
         <option value="">Select Occurrence</option>
         <option value="Daily">Daily</option>
         <option value="Weekly">Weekly</option>
         <option value="Monthly">Monthly</option>
     </select>
 </div>
-<div class="form-group" id="timeInput" style="display: none;">
-    <label for="time">Time (HH:MM) *</label>
-    <input type="time" class="form-control" id="time" name="time">
+
+<!-- Monthly Date Input -->
+<div id="monthlyDateInput" style="display: none;" class="form-group">
+    <label for="date">Select Date</label>
+    <input type="date" id="date" name="date" class="form-control">
 </div>
-<div class="form-group" id="dayInput" style="display: none;">
-    <label for="day">Select Day *</label>
+
+<!-- Weekly Day Input -->
+<div id="weeklyDayInput" style="display: none;" class="form-group">
+    <label for="day">Select Day</label>
     <select id="day" name="day" class="form-control">
         <option value="">Select Day</option>
         <option value="Monday">Monday</option>
@@ -317,10 +321,13 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
         <option value="Sunday">Sunday</option>
     </select>
 </div>
-<div class="form-group" id="dateInput" style="display: none;">
-    <label for="date">Select Date *</label>
-    <input type="date" class="form-control" id="date" name="date">
+
+<!-- Time Input -->
+<div id="timeInput" style="display: none;" class="form-group">
+    <label for="time">Select Time</label>
+    <input type="time" id="time" name="time" class="form-control">
 </div>
+
 
                             <button type="submit" class="btn btn-primary btn-block mt-2"><i class="fas fa-save"></i> Register</button>
                         </form>
@@ -386,21 +393,27 @@ document.getElementById('registrationForm').addEventListener('submit', function(
     .catch(error => console.error('Error:', error));
 });
 
-        document.getElementById("occurrence").addEventListener("change", function() {
-    const occurrence = this.value;
+document.getElementById('occurrence').addEventListener('change', function() {
+    var occurrenceValue = this.value;
+    var monthlyDateInput = document.getElementById('monthlyDateInput');
+    var weeklyDayInput = document.getElementById('weeklyDayInput');
+    var timeInput = document.getElementById('timeInput');
+    
+    // Hide all inputs by default
+    monthlyDateInput.style.display = 'none';
+    weeklyDayInput.style.display = 'none';
+    timeInput.style.display = 'none';
 
-    // Hide all additional input fields initially
-    document.getElementById("timeInput").style.display = 'none';
-    document.getElementById("dayInput").style.display = 'none';
-    document.getElementById("dateInput").style.display = 'none';
+    // Show the correct inputs based on the selected occurrence
+    if (occurrenceValue === 'Monthly') {
+        monthlyDateInput.style.display = 'block';
+    } else if (occurrenceValue === 'Weekly') {
+        weeklyDayInput.style.display = 'block';
+    }
 
-    // Show the corresponding input field based on the selected occurrence
-    if (occurrence === "Daily") {
-        document.getElementById("timeInput").style.display = 'block';
-    } else if (occurrence === "Weekly") {
-        document.getElementById("dayInput").style.display = 'block';
-    } else if (occurrence === "Monthly") {
-        document.getElementById("dateInput").style.display = 'block';
+    // Always show time input after selecting Monthly, Weekly, or Daily
+    if (occurrenceValue === 'Monthly' || occurrenceValue === 'Weekly' || occurrenceValue === 'Daily') {
+        timeInput.style.display = 'block';
     }
 });
 

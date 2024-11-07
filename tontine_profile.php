@@ -96,6 +96,7 @@ if (isset($_GET['id'])) {
     $exists = $stmt->fetchColumn() > 0;
 }
   
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -134,8 +135,9 @@ body {
             display: flex;
             max-width: 1200px;
             width: 100%;
-            padding: 1px 20px;
-            margin-top: -20px;
+            gap: 20px;
+            /* padding: 1px 20px; */
+            /* margin-top: -20px; */
         }
         .left-section {
   flex: 1; /* Takes up available width */
@@ -144,16 +146,16 @@ body {
   overflow: auto; /* Allows scrolling within if content overflows */
   height: auto; /* Adjust height based on content */
   min-height: 0; /* Ensures the section does not grow larger than its container */
-  height:  80vh;
-}
+  border-radius: 5px;
 
-        .right-section {
-  flex: 1; /* Takes up 50% of the available width */
+}
+.right-section {
+    flex: 1; /* Takes up available width */
   padding: 20px;
-  background-color: #ffffff;
-  overflow-y: auto; /* Allows vertical scroll within the section if necessary */
-  max-height: 100vh; 
-  box-sizing: border-box;
+  background-color: #f9f9f9;
+  /* Adjust height based on content */
+  min-height: 0; /* Ensures the section does not grow larger than its container */
+
 }
 
 
@@ -273,6 +275,7 @@ body {
                 <p><strong>Total Contributions:</strong> <?php echo number_format($tontine['total_contributions']); ?> Rwf</p>
                     <p><strong>Occurence:</strong> <?php echo htmlspecialchars($tontine['occurrence']); ?> </p>
                 <?php echo $occurrenceDisplay; ?>
+                  <p><strong>Time:</strong> <?php echo htmlspecialchars($tontine['time']); ?> </p>
             </div>
         </div>
 
