@@ -75,7 +75,8 @@ if (empty($tontine['logo']) || !file_exists($logoFilePath)) {
 $occurrenceDisplay = '';
 switch (strtolower($tontine['occurrence'])) {
     case 'daily':
-        $occurrenceDisplay = '<p><strong>Time:</strong> ' . htmlspecialchars($tontine['time']) . '</p>';
+        // Only display time for daily occurrence
+        // $occurrenceDisplay = '<p><strong>Time:</strong> ' . htmlspecialchars($tontine['time']) . '</p>';
         break;
     case 'weekly':
         $occurrenceDisplay = '<p><strong>Day:</strong> ' . htmlspecialchars($tontine['day']) . '</p>';
@@ -96,7 +97,6 @@ if (isset($_GET['id'])) {
     $exists = $stmt->fetchColumn() > 0;
 }
   
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
