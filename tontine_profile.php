@@ -48,9 +48,13 @@ if (!$sectorExists) {
 }
 
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$rules = $tontine['rules']; // Tontine rules fetched from database 
+$purpose=$tontine['purpose']; // Tontine purpose fetched from database from                         
+
 // Get the values from the database
 $time = $tontine['time'];
 $day = $tontine['day'];
@@ -265,10 +269,12 @@ body {
          .timer-box {
             border: 2px solid skyblue;
             border-radius: 5px;
-            padding: 10px;
+            padding: 5px 10px;
             text-align: center;
             width: 80px;
             margin: 5px;
+            margin-top: -10px;
+            margin-bottom: 10px;
             font-weight: bold;
         }
         .timer-box span {
@@ -300,7 +306,7 @@ body {
                   
             </div>
         </div>
-        <div class="container d-flex justify-content-center align-items-center mt-5">
+        <div class="container d-flex justify-content-center align-items-center mt-1">
        <!-- Countdown Timer HTML -->
 <div class="d-flex">
     <div class="timer-box">
@@ -392,28 +398,39 @@ body {
             <p><strong>Missed Contributions:</strong> Subject to review</p>
         </div>
     </div>
-
-    <!-- Purpose & Rules Section -->
-    <div class="about-section border-bottom mb-1 pb-1">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <h6 class="section-title text-info">Purpose</h6>
-          
-        </div>
-     <div class="edit-field mb-1 space-between" contenteditable="true">
-    Raise Each Other
-    <i class="fas fa-pencil-alt edit-icon text-info" onclick="enableEdit(this)"></i>
-
-
-<div class="d-flex justify-content-between align-items-center mb-1">
-    <h6 class="section-title text-info">Rules</h6>
-</div>
-
-<div class="edit-field1" contenteditable="true">
-    Follow each rule, contribute on time, and repay loans promptly.
-    <i class="fas fa-pencil-alt edit-icon text-info" onclick="enableEdit(this)"></i>
-</div>
-
+<!-- Purpose & Rules Section -->
+<div class="about-section border-bottom mb-1 pb-1">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h6 class="section-title text-info">Purpose</h6>
     </div>
+
+    <?php
+    // Check if the purpose is empty, then set a default value
+    $purpose = isset($purpose) && !empty($purpose) ? $purpose : 'Describe your purpose';
+    ?>
+    <input type="text" class="edit-field mb-1 space-between" id="purpose-field" value="<?php echo htmlspecialchars($purpose); ?>">
+
+    <i class="fas fa-pencil-alt edit-icon text-info" onclick="editField('purpose')"></i>
+
+    <h6 class="section-title text-info">Rules</h6>
+
+    <?php
+    // Check if the rules are empty, then set a default value
+    $rules = isset($rules) && !empty($rules) ? $rules : 'Describe your rules';
+    ?>
+    <input type="text" class="edit-field mb-1 space-between" id="rules-field" value="<?php echo htmlspecialchars($rules); ?>">
+
+    <i class="fas fa-pencil-alt edit-icon text-info" onclick="editField('rules')"></i>
+</div>
+
+<!-- Include SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+</div>
+
+
+
 
    
 
@@ -532,21 +549,57 @@ function confirmUpdate() {
     });
    
 }
+// Function to trigger SweetAlert popup for editing either Purpose or Rules
+function editField(field) {
+    let fieldValue = document.getElementById(field + '-field').value;
 
+    // Open SweetAlert popup
+    Swal.fire({
+        title: 'Edit ' + field.charAt(0).toUpperCase() + field.slice(1),
+        input: 'text',
+        inputValue: fieldValue,
+        showCancelButton: true,
+        confirmButtonText: 'Save',
+        cancelButtonText: 'Cancel',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'You need to write something!';
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let newValue = result.value;
 
-function enableEdit(element) {
-    const field = element.closest('.about-section').querySelector('.edit-field');
-    field.focus();
-    field.style.border = '1px solid #007bff';
-    field.onblur = () => {
-        field.style.border = '1px solid #ccc';
-    };
+            // Send the updated value to the server to save it
+            updateFieldInDatabase(field, newValue);
+        }
+    });
+}
+
+// Function to send AJAX request to update field in the database
+function updateFieldInDatabase(field, newValue) {
+    let data = new FormData();
+    data.append('field', field);
+    data.append('value', newValue);
+
+    fetch('update_field.php', {
+        method: 'POST',
+        body: data
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the value in the input field
+            document.getElementById(field + '-field').value = newValue;
+            Swal.fire('Success', 'Your ' + field + ' has been updated!', 'success');
+        } else {
+            Swal.fire('Error', 'Failed to update the ' + field, 'error');
+        }
+    })
+    .catch(error => {
+        Swal.fire('Error', 'An error occurred while updating', 'error');
+    });
 }
 </script>
-
-
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
