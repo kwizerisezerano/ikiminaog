@@ -201,18 +201,27 @@ body {
             font-size: 20px;
             font-weight: 600;
         }
-        .button-container {
-  display: flex; /* Align buttons horizontally */
-  flex-wrap: wrap; /* Allow wrapping if there isn't enough space */
-  gap: 3px; /* Space between buttons */
-  justify-content: flex-start; /* Align buttons to the left */
+         .button-container{
+          display: flex;
+          margin: 5px 80px;
+          gap: 10px; 
+         }
+        .button-container .btn-action {
+    width: 120px; /* Set desired width */
+    height: 50px; /* Set desired height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.button-container .btn {
-  font-size: 13px; /* Reduce font size */
-  padding: 8px 4px; /* Adjust padding for a smaller button */
-  width: auto; /* Allow width to adjust based on text */
+.button-container .btn-action a,
+.button-container .btn-action i,
+.button-container .btn-action p {
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
 }
+
 
 .button-container .btn i {
   font-size: 16px; /* Adjust icon size */
@@ -223,8 +232,8 @@ body {
         .custom-button:hover {
             opacity: 0.9;
             text-decoration: none;
-            color: #fff;
         }
+      
         .right-section {
             flex: 1;
             background-color: #fff;
@@ -332,35 +341,20 @@ body {
 
         <!-- Buttons for Actions -->
         <div class="button-container d-flex justify-content-start">
-    <button type="button" class="btn btn-outline-info btn-verification">
+    <button type="button" class="btn btn-outline-info btn-verification btn-action">
         <a href="user_profile.php" class="text-primary">Home</a>
     </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-verification">
-        Request Verification
-    </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-delete">
-        Join Us
-    </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-manage-contributions">
-        Contributions
-    </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-manage-loans">
-        Loans
-    </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-manage-penalties">
-        Penalties
-    </button>
-   <!-- Update Button -->
-<button type="button" class="btn btn-outline-info text-primary btn-update" onclick="confirmUpdate()">
-    <i class="fas fa-edit"></i> 
+    
+<!-- Join Button -->
+<button type="button" class="btn btn-outline-info btn-action btn-join" onclick="confirmJoinTontine()">
+    <i class="fas fa-user-plus text-primary"></i> <p class="text-primary">Join Now</p>
 </button>
 
-<!-- Delete Button -->
-<button type="button" class="btn btn-outline-info text-primary btn-delete" onclick="confirmDelete()">
-    <i class="fas fa-trash-alt"></i> 
+
+
 </button>
-<button type="button" class="btn btn-outline-info text-primary btn-verification">
-        <a href="user_profile.php" class="text-white"><i class="fas fa-bell text-primary"></i></a>
+<button type="button" class="btn btn-outline-info btn-verification btn-action ">
+        <a href="user_profile.php" class="text-blue"><i class="fas fa-bell "></i></a>
     </button>
 
 </div>
@@ -411,7 +405,7 @@ body {
     ?>
     <input type="text" class="edit-field mb-1 space-between" id="purpose-field" value="<?php echo htmlspecialchars($purpose); ?>">
 
-    <i class="fas fa-pencil-alt edit-icon text-info" onclick="editField('purpose')"></i>
+  
 
     <h6 class="section-title text-info">Rules</h6>
 
@@ -421,7 +415,7 @@ body {
     ?>
     <input type="text" class="edit-field mb-1 space-between" id="rules-field" value="<?php echo htmlspecialchars($rules); ?>">
 
-    <i class="fas fa-pencil-alt edit-icon text-info" onclick="editField('rules')"></i>
+ 
 </div>
 
 <!-- Include SweetAlert2 -->
@@ -515,37 +509,22 @@ body {
             updateCountdown();
             const interval = setInterval(updateCountdown, 1000);
         }
-// Function to show delete confirmation
-function confirmDelete() {
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "This action cannot be undone!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, keep it'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Perform the deletion
-            window.location.href = 'delete_tontine.php?id=' + <?php echo $id; ?>;
-        }
-    });
-}
+
 
 // Function to show the update modal
-function confirmUpdate() {
+function confirmJoinTontine() {
     // Open your modal or form for editing
     Swal.fire({
         title: 'Are you sure?',
-        text: "You want to update tontine",
+        text: "You want to join this  tontine",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'Yes, Update it!',
+        confirmButtonText: 'Yes, I want to Join it!',
         cancelButtonText: 'No, ',
     }).then((result) => {
         if (result.isConfirmed) {
             // Perform the deletion
-            window.location.href = 'update_tontine.php?id=' + <?php echo $id; ?>;
+            window.location.href = 'join_tontine.php?id=' + <?php echo $id; ?>;
         }
     });
    

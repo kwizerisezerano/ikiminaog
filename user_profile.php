@@ -242,7 +242,7 @@ $total_notifications = 5;
                     <div class='details'>
                         <i class='fas fa-map-marker-alt icon'></i>{$tontine['province']}, {$tontine['district']}, {$tontine['sector']}
                     </div>
-                   <button class='btn btn-outline-primary  mt-2' onclick='showTontineDetails(" . json_encode($tontine) . ")'>View Details</button>
+                   <button class='btn btn-outline-primary mt-2' onclick='confirmJoinTontine(" . $tontine['id'] . ")'>View Details</button>
                 </div>
             </div>
         </div>
@@ -281,7 +281,7 @@ $total_notifications = 5;
                     <div class='timer mt-2'>
                         $timeInfo
                     </div>
-                    <button class='btn btn-outline-primary mt-2' onclick='showTontineDetails(" . json_encode($tontine) . ")'>View Details</button>
+                  <button class='btn btn-outline-primary mt-2' onclick='confirmJoinTontine(" . $tontine['id'] . ")'>View Details</button>
                 </div>
             </div>";
         }
@@ -293,48 +293,18 @@ $total_notifications = 5;
     <!-- Remaining content goes here -->
 
     <script>
-function showTontineDetails(tontine) {
-    // Fallback to a default logo if none is provided
-    const logoUrl = tontine.logo ? tontine.logo : 'path/to/default/logo.png';
-
-    // Determine the contribution occurrence display
-    let occurrenceDisplay;
-    if (tontine.occurrence === 'Daily') {
-        occurrenceDisplay = `Every day at ${tontine.time}`;
-    } else if (tontine.occurrence === 'Weekly') {
-        occurrenceDisplay = `Every week on ${tontine.day}`;
-    } else if (tontine.occurrence === 'Monthly') {
-        occurrenceDisplay = `Every month on ${tontine.date}`;
-    }
-
+function confirmJoinTontine(tontineId) {
+    // Show SweetAlert confirmation dialog
     Swal.fire({
-        html: `
-            <div style="display: flex; align-items: center; padding: 20px;">
-                <img src="${logoUrl}" alt="${tontine.tontine_name} Logo" style="width: 100px; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); margin-right: 20px;">
-                <div style="width: 100%; text-align: left;">
-                    <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">
-                        ${tontine.tontine_name}
-                    </div>
-                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Purpose:</strong> ${tontine.purpose}</p>
-                     <p style="margin: 8px 0; font-size: 1rem;"><strong>Contribution per place:</strong> ${tontine.total_contributions}</p>
-                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Occurrence:</strong> ${occurrenceDisplay}</p>
-                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Location:</strong> ${tontine.province}, ${tontine.district}, ${tontine.sector}</p>
-                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Start Date:</strong> ${tontine.join_date}</p>
-                    <p style="margin: 8px 0; font-size: 1rem;"><strong>Rules:</strong> ${tontine.rules}</p>
-                </div>
-            </div>
-        `,
-        icon: 'info',
-        showCancelButton: false,
-        confirmButtonText: '<span style="padding: 5px 15px;">Join</span>',
-        customClass: {
-            popup: 'swal-popup',
-            confirmButton: 'swal-confirm-button'
-        },
+        title: 'Are you sure you want to view more details about  this tontine?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, show more details ',
+        cancelButtonText: 'Cancel',
     }).then((result) => {
         if (result.isConfirmed) {
-            // Redirect to Join_tontine.php with the tontine ID as a query parameter
-            window.location.href = `Join_tontine.php?id=${tontine.id}`;
+            // Redirect to tontine_profile_member.php with the tontine ID as a query parameter
+            window.location.href = `tontine_profile_member.php?id=${tontineId}`;
         }
     });
 }
