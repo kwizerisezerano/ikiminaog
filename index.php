@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // Set session and success message
                         $_SESSION['user_id'] = $user['id']; // Corrected field name
-                        $message = '<div class="bg-success text-white" style="border-radius: 8px; padding: 10px;">Login successful. Please check your SMS for the OTP.</div><br>';
+                        $message = '<div class="bg-success text-white" style="border-radius: 8px; padding: 10px;"> Please check your SMS for the OTP.</div><br>';
 
                         // Include JavaScript for redirection
                         echo '<script>

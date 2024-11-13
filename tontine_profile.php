@@ -101,7 +101,34 @@ switch (strtolower($tontine['occurrence'])) {
 
 
 
-// Calculate the target date and time for the countdown timer  
+// Calculate the target date and time for the countdown timer 
+// Get the tontine ID dynamically from the query string or default to 1
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 1;
+
+// Prepare and execute the query to fetch the creator's name using a JOIN
+$stmt = $pdo->prepare("
+    SELECT users.firstname, users.lastname
+    FROM tontine
+    JOIN users ON tontine.user_id = users.id
+    WHERE tontine.id = :id
+");
+$stmt->bindParam(':id', $id, PDO::PARAM_INT);
+$stmt->execute();
+
+// Fetch the creator's details
+$creator = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Check if the creator data is found
+if ($creator) {
+    $creator_name = htmlspecialchars($creator['firstname'] . ' ' . $creator['lastname']); // Name of the creator
+
+    // // Display the name of the creator
+    // echo "<p class='mb-1'><strong>Created by:</strong> " . $creator_name . "</p>";
+} else {
+    // If no creator found for the given tontine ID
+    // echo "<p class='mb-1'><strong>Created by:</strong> Unknown</p>";
+}
+
 
 
 ?>
@@ -376,7 +403,7 @@ body {
             <h6 class="section-title text-info">Contact Information</h6>
            
         </div>
-        <p class="mb-1"><strong>Created by:</strong> <?php echo htmlspecialchars($user_name); ?></p>
+        <p class="mb-1"><strong>Created by:</strong> <?php echo htmlspecialchars($creator_name); ?></p>
         <p><strong>Contact:</strong> <?php echo htmlspecialchars($user_contact); ?></p>
     </div>
 

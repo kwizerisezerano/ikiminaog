@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // Fetch user details
-$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image FROM users WHERE id = :id");
+$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image,idno,behalf_name,behalf_phone_number ,idno_picture,otp_behalf_used FROM users WHERE id = :id");
 $stmt->bindParam(':id', $user_id);
 $stmt->execute();
 
@@ -23,10 +23,18 @@ if (!$user) {
 }
 
 // Sanitize user data
+$otp_behalf_used = $user['otp_behalf_used'];
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
 $first_name = htmlspecialchars($user['firstname']);
 $last_name = htmlspecialchars($user['lastname']);
 $phone_number = htmlspecialchars($user['phone_number']);
+
+$user_idno = htmlspecialchars($user['idno']);
+
+$user_behalf_name = htmlspecialchars($user['behalf_name']);
+
+$user_behalf_contact = htmlspecialchars($user['behalf_phone_number']);
+$idno_picture = !empty($user['idno_picture']) ? htmlspecialchars($user['idno_picture']) : 'default.jpg';
 $user_image = !empty($user['image']) ? htmlspecialchars($user['image']) : 'default.jpg';
 
 // Notification count
@@ -77,85 +85,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-
-    // Profile update
     if (isset($_POST['update_profile'])) {
+        // Trim input data
         $new_first_name = trim($_POST['first_name']);
         $new_last_name = trim($_POST['last_name']);
         $new_phone_number = trim($_POST['phone_number']);
-
-        // Validate inputs
-        if (empty($new_first_name) || empty($new_last_name) || empty($new_phone_number)) {
+        $idno = trim($_POST['idno']);
+        $idno_type = $_POST['idnotype'];
+        $on_behalf_name = trim($_POST['on_behalf_name']);
+        $on_behalf_contact = trim($_POST['on_behalf_contact']);
+        $errors = [];
+    
+        // Validate required fields
+        if (empty($new_first_name) || empty($new_last_name) || empty($new_phone_number) || empty($idno) || empty($on_behalf_name) || empty($on_behalf_contact)) {
             $errors[] = "All fields are required.";
         }
-
+    
+        // Validate names
         if (!preg_match("/^[a-zA-Z ]+$/", $new_first_name)) {
             $errors[] = "First name must contain only letters and spaces.";
         }
-
         if (!preg_match("/^[a-zA-Z ]+$/", $new_last_name)) {
             $errors[] = "Last name must contain only letters and spaces.";
         }
-
+    
+        // Validate phone number
         if (!preg_match("/^\d{10,15}$/", $new_phone_number)) {
             $errors[] = "Phone number must contain digits only and be between 10 and 15 digits.";
         }
-        
-
-        // Check if the new phone number already exists
-        if (empty($errors)) {
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE phone_number = :phone_number AND id != :id");
-            $stmt->bindParam(':phone_number', $new_phone_number);
-            $stmt->bindParam(':id', $user_id);
-            $stmt->execute();
-            $count = $stmt->fetchColumn();
-
-            if ($count > 0) {
-                $errors[] = "The phone number you are typing is already assigned to another user. Please use a different phone number.";
+    
+        // Validate IDNO based on type
+        if (!function_exists('validateIDNO')) {
+            function validateIDNO($idno) {
+                if (strlen($idno) !== 16) return false;
+                if (!in_array($idno[0], ['1', '2', '3'])) return false;
+                $birthYear = (int)substr($idno, 1, 4);
+                $currentYear = (int)date("Y");
+                if ($birthYear < 1900 || $birthYear > $currentYear) return false;
+                if (!in_array($idno[5], ['7', '8'])) return false;
+                if (!preg_match("/^\d{7}$/", substr($idno, 6, 7))) return false;
+                if (!preg_match("/^\d$/", $idno[13])) return false;
+                if (!preg_match("/^\d{2}$/", substr($idno, 14, 2))) return false;
+                return true;
             }
         }
-
-        // Update profile if no errors
+    
+        if ($idno_type === "Rwandan" && !validateIDNO($idno)) {
+            $errors[] = "Invalid Rwandan National ID format.";
+        } elseif ($idno_type === "Foreign" && !preg_match("/^\d+$/", $idno)) {
+            $errors[] = "Foreign IDNO must contain only digits.";
+        }
+    
+        // Validate on behalf contact name and number
+        if (!preg_match("/^[a-zA-Z ]+$/", $on_behalf_name)) {
+            $errors[] = "On behalf name must contain only letters and spaces.";
+        }
+        if (!preg_match("/^\d{10,15}$/", $on_behalf_contact)) {
+            $errors[] = "On behalf contact must contain digits only and be between 10 and 15 digits.";
+        }
+    
+        // Check for duplicate entries in the database
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE phone_number = :phone_number AND id != :id");
+        $stmt->bindParam(':phone_number', $new_phone_number);
+        $stmt->bindParam(':id', $_SESSION['user_id']);
+        $stmt->execute();
+        if ($stmt->fetchColumn() > 0) {
+            $errors[] = "The phone number is assigned to another user.";
+        }
+    
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE idno = :idno AND id != :id");
+        $stmt->bindParam(':idno', $idno);
+        $stmt->bindParam(':id', $_SESSION['user_id']);
+        $stmt->execute();
+        if ($stmt->fetchColumn() > 0) {
+            $errors[] = "The ID number is assigned to another user.";
+        }
+    
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE behalf_phone_number = :behalf_phone_number AND id != :id");
+        $stmt->bindParam(':behalf_phone_number', $on_behalf_contact);
+        $stmt->bindParam(':id', $_SESSION['user_id']);
+        $stmt->execute();
+        if ($stmt->fetchColumn() > 0) {
+            $errors[] = "The on behalf contact number is assigned to another user.";
+        }
+    
+        // OTP generation and SMS sending function
+        function generateOTP($length = 6) {
+            return random_int(100000, 999999);
+        }
+    
+        function sendMessage($phoneNumber, $message) {
+            hdev_sms::send('N-SMS', $phoneNumber, $message);
+        }
+    
+        // If no errors, process OTP and update profile
         if (empty($errors)) {
-            $stmt = $pdo->prepare("UPDATE users SET firstname = :firstname, lastname = :lastname, phone_number = :phone_number WHERE id = :id");
+            $otp = generateOTP();
+            
+            $stmt = $pdo->prepare("UPDATE users SET otp_behalf = :otp WHERE phone_number = :phone_number");
+            $stmt->bindParam(':otp', $otp);
+            $stmt->bindParam(':phone_number', $on_behalf_contact);
+            $stmt->execute();
+    
+            $otpMessage = "
+                Dear $on_behalf_name,
+                You are receiving this message on behalf of $new_first_name $new_last_name.
+                Your OTP for verifying the account is: $otp.
+                Please use this code to activate the account or click the link below:
+                http://192.168.43.246/ikimina/onbehalf_otp_verify.php?phone_number=" . urlencode($on_behalf_contact) . "&otp=" . urlencode($otp);
+            
+            sendMessage($on_behalf_contact, $otpMessage);
+    
+            $user_id = $_SESSION['user_id'];
+            $stmt = $pdo->prepare("UPDATE users SET 
+                firstname = :firstname, 
+                lastname = :lastname, 
+                phone_number = :phone_number, 
+                idno = :idno, 
+                idnotype = :idnotype, 
+                behalf_name = :behalf_name, 
+                behalf_phone_number = :behalf_phone_number 
+                WHERE id = :id");
+            
             $stmt->bindParam(':firstname', $new_first_name);
             $stmt->bindParam(':lastname', $new_last_name);
             $stmt->bindParam(':phone_number', $new_phone_number);
+            $stmt->bindParam(':idno', $idno);
+            $stmt->bindParam(':idnotype', $idno_type);
+            $stmt->bindParam(':behalf_name', $on_behalf_name);
+            $stmt->bindParam(':behalf_phone_number', $on_behalf_contact);
             $stmt->bindParam(':id', $user_id);
-
+    
             if ($stmt->execute()) {
-                $success_message = "Profile updated successfully!";
-                header("Location: user_profile.php"); // Redirect to profile page
-                exit();
+                header("Location: onbehalf_otp_verify.php?phone_number=" . urlencode($on_behalf_contact));
+                exit;
             } else {
                 $errors[] = "Failed to update profile in the database.";
             }
         }
-
-        // If there are no errors, simulate updating the profile
-    if (empty($errors)) {
-        // Your database update logic would go here
-        $_SESSION['success'] = "Profile updated successfully!";
-        header("Location: success.php");
-        exit();
-    } else {
-        // If there are errors, encode them for JavaScript
-        echo '<script>
-            var errors = ' . json_encode($errors) . ';
-            if (errors.length > 0) {
-                errors.forEach(function(error) {
+    
+        // Display errors
+        if (!empty($errors)) {
+            echo '<script>
+                var errors = ' . json_encode($errors) . ';
+                if (errors.length > 0) {
                     Swal.fire({
                         icon: "error",
-                        title: "Error!",
-                        text: error,
+                        title: "Validation Error",
+                        html: errors.join("<br>"),
                         confirmButtonText: "OK"
                     });
-                });
-            }
-        </script>';
+                }
+            </script>';
+        }
     }
 
-    }
 }
 ?>
 
@@ -291,7 +375,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="col-md-8">
                         <h4><?php echo $user_name; ?></h4>
-                        <p>Phone: <?php echo $phone_number; ?></p>
+                        <p><strong>Phone:</strong> <?php echo $phone_number; ?></p>
+                        <p><strong>IDNO: </strong><?php echo $user_idno; ?></p>
+                        <p>
+    <strong>On Behalf Person:</strong> 
+    <?php echo htmlspecialchars($user_behalf_name); ?>
+    <?php if ($otp_behalf_used == 1): ?>
+        <span style="color: green; font-weight: bold; margin-left: 8px;">✔</span> <!-- Green Tick -->
+    <?php else: ?>
+        <span style="color: red; font-weight: bold; margin-left: 8px;">✖</span> <!-- Red X -->
+    <?php endif; ?>
+</p>
+                         <p> <strong>  On Behalf Contact: </strong><?php echo $user_behalf_contact; ?></p>
+                         
+                       
                         <button class="btn btn-primary" id="updateProfileBtn" data-toggle="modal" data-target="#updateProfileModal">Update Profile</button>
                     </div>
                 </div>
@@ -308,39 +405,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- Update Profile Modal -->
-    <div class="modal fade" id="updateProfileModal" tabindex="-1" aria-labelledby="updateProfileModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form action="" method="POST" id="profileForm" onsubmit="return validateForm()">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="updateProfileModalLabel">Update Profile</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+ <!-- Update Profile Modal -->
+<div class="modal fade" id="updateProfileModal" tabindex="-1" aria-labelledby="updateProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="" method="POST" id="profileForm" onsubmit="return validateForm()" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateProfileModalLabel">Update Profile</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- First Name -->
+                    <div class="form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" name="first_name" id="first_name" class="form-control" value="<?php echo $first_name; ?>" required>
                     </div>
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="first_name">First Name</label>
-                            <input type="text" name="first_name" id="first_name" class="form-control" value="<?php echo $first_name; ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="last_name">Last Name</label>
-                            <input type="text" name="last_name" id="last_name" class="form-control" value="<?php echo $last_name; ?>" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone_number">Phone Number</label>
-                            <input type="text" name="phone_number" id="phone_number" class="form-control" value="<?php echo $phone_number; ?>" required>
-                        </div>
+                    <!-- Last Name -->
+                    <div class="form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" name="last_name" id="last_name" class="form-control" value="<?php echo $last_name; ?>" required>
                     </div>
-                    <div class="modal-footer">
-                        <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button> -->
-                        <button type="submit" name="update_profile" class="btn btn-primary">Save Changes</button>
+                    <!-- Phone Number -->
+                    <div class="form-group">
+                        <label for="phone_number">Phone Number</label>
+                        <input type="text" name="phone_number" id="phone_number" class="form-control" value="<?php echo $phone_number; ?>" required>
                     </div>
-                </form>
-            </div>
+                    <!-- IDNO Type -->
+                    <div class="form-group">
+                        <label for="idnotype">Choose IDNO Type</label>
+                        <select name="idnotype" id="idnotype" class="form-control" onchange="toggleIDNOValidation()">
+                            <option value="Rwandan">Rwandan</option>
+                            <option value="Foreign">Foreign</option>
+                        </select>
+                    </div>
+                    <!-- IDNO (conditional validation) -->
+                    <div class="form-group">
+                        <label for="idno">IDNO</label>
+                        <input type="text" id="idno" name="idno" class="form-control" required value="<?php echo $user_idno; ?>">
+                        <span id="idnoError" style="color: red; font-size: 0.9em;"></span>
+                    </div>
+                    <!-- Picture (Image Upload) -->
+                    <div class="form-group">
+                        <label for="picture">Picture</label>
+                        <input type="file" name="picture" id="picture" class="form-control-file" accept="image/*" required>
+                    </div>
+                    <!-- On behalf person name -->
+                    <div class="form-group">
+                        <label for="on_behalf_name">On Behalf Person Name</label>
+                        <input type="text" name="on_behalf_name" id="on_behalf_name" class="form-control" required value="<?php echo $user_behalf_name; ?>">
+                    </div>
+                    <!-- On behalf person contact -->
+                    <div class="form-group">
+                        <label for="on_behalf_contact">On Behalf Person Contact</label>
+                        <input type="text" name="on_behalf_contact" id="on_behalf_contact" class="form-control" pattern="\d*" title="Please enter numbers only." required value="<?php echo $user_behalf_contact; ?>">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" name="update_profile" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
 
     <!-- Upload Image Modal -->
     <div class="modal fade" id="uploadImageModal" tabindex="-1" aria-labelledby="uploadImageModalLabel" aria-hidden="true">
@@ -381,71 +510,158 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 
-    <script>
-        function openModal(imageSrc) {
-            document.getElementById('profileImageView').src = imageSrc;
-            $('#viewImageModal').modal('show');
+<script>
+    function openModal(imageSrc) {
+        document.getElementById('profileImageView').src = imageSrc;
+        $('#viewImageModal').modal('show');
+    }
+
+    function confirmLogout() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to log out?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, log out',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'logout.php';
+            }
+        });
+    }
+
+    function validateForm() {
+        const firstName = document.getElementById('first_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        const phoneNumber = document.getElementById('phone_number').value.trim();
+        const idno = document.getElementById('idno').value.trim();
+        const idnoType = document.getElementById('idnotype').value;
+        const picture = document.getElementById('picture').files[0];
+        const onBehalfName = document.getElementById('on_behalf_name').value.trim();
+        const onBehalfContact = document.getElementById('on_behalf_contact').value.trim();
+        const errors = [];
+
+        // Check required fields
+        if (!firstName || !lastName || !phoneNumber || !idno || !onBehalfName || !onBehalfContact) {
+            errors.push("All fields are required.");
         }
 
-        function confirmLogout() {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'Do you want to log out?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, log out',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'logout.php';
-                }
-            });
+        // Validate name fields
+        if (!/^[a-zA-Z ]+$/.test(firstName)) errors.push("First name must contain only letters and spaces.");
+        if (!/^[a-zA-Z ]+$/.test(lastName)) errors.push("Last name must contain only letters and spaces.");
+
+        // Validate phone number
+        if (!/^\d{10,15}$/.test(phoneNumber)) {
+            errors.push("Phone number must contain digits only and be between 10 and 15 digits.");
         }
-        function validateForm() {
-    // Get form fields
-    const firstName = document.getElementById('first_name').value.trim();
-    const lastName = document.getElementById('last_name').value.trim();
-    const phoneNumber = document.getElementById('phone_number').value.trim();
-    const errors = [];
 
-    // Check if fields are empty
-    if (!firstName || !lastName || !phoneNumber) {
-        errors.push("All fields are required.");
-    }
+        // Conditional validation for IDNO
+        if (idnoType === "Rwandan") {
+            if (!validateIDNO(idno)) {
+                errors.push("Invalid Rwandan National ID format.");
+            }
+        } else {
+            if (!/^\d+$/.test(idno)) {
+                errors.push("Foreign IDNO must contain only digits.");
+            }
+        }
 
-    // Validate first name
-    if (!/^[a-zA-Z ]+$/.test(firstName)) {
-        errors.push("First name must contain only letters and spaces.");
-    }
+        // Validate picture (image file check)
+        if (!picture || !['image/jpeg', 'image/png', 'image/jpg'].includes(picture.type)) {
+            errors.push("Please upload a valid image file (JPEG or PNG format).");
+        }
 
-    // Validate last name
-    if (!/^[a-zA-Z ]+$/.test(lastName)) {
-        errors.push("Last name must contain only letters and spaces.");
-    }
+        // Validate on behalf person name and contact
+        if (!/^[a-zA-Z ]+$/.test(onBehalfName)) {
+            errors.push("On behalf person name must contain only letters and spaces.");
+        }
+        if (!/^\d{10,15}$/.test(onBehalfContact)) {
+            errors.push("On behalf person contact must contain digits only and be between 10 and 15 digits.");
+        }
 
-    // Validate phone number
-    if (!/^\d{10,15}$/.test(phoneNumber)) {
-        errors.push("Phone number must contain digits only and be between 10 and 15 digits.");
-    }
-
-    // Show errors if any
-    if (errors.length > 0) {
-        errors.forEach(function(error) {
+        // Display errors if any
+        if (errors.length > 0) {
             Swal.fire({
                 icon: "error",
                 title: "Validation Error",
-                text: error,
+                html: errors.join("<br>"),
                 confirmButtonText: "OK"
             });
-        });
-        return false; // Prevent form submission
+            return false;
+        }
+
+        return true;
     }
 
-    return true; // Allow form submission
-}
+    function validateIDNO(idno) {
+        if (idno.length !== 16) return false;
 
+        const nationalIdentifier = idno[0];
+        if (!['1', '2', '3'].includes(nationalIdentifier)) return false;
 
-    </script>
+        const birthYear = parseInt(idno.substring(1, 5), 10);
+        const currentYear = new Date().getFullYear();
+        if (birthYear < 1900 || birthYear > currentYear) return false;
+
+        const genderIdentifier = idno[5];
+        if (!['8', '7'].includes(genderIdentifier)) return false;
+
+        const birthOrderNumber = idno.substring(6, 13);
+        if (!/^\d{7}$/.test(birthOrderNumber)) return false;
+
+        const issueFrequency = idno[13];
+        if (!/^\d$/.test(issueFrequency)) return false;
+
+        const securityCode = idno.substring(14, 16);
+        if (!/^\d{2}$/.test(securityCode)) return false;
+
+        return true;
+    }
+
+    function toggleIDNOValidation() {
+        const idnoType = document.getElementById('idnotype').value;
+        const idnoInput = document.getElementById('idno');
+        const errorSpan = document.getElementById('idnoError');
+
+        if (idnoType === "Rwandan") {
+            idnoInput.setAttribute("maxlength", "16");
+            errorSpan.textContent = ""; // Clear error message
+        } else {
+            idnoInput.removeAttribute("maxlength"); // Allow more than 16 digits
+            errorSpan.textContent = ""; // Clear error message
+        }
+    }
+
+    // Real-time validation for IDNO with inline feedback
+    document.getElementById('idno').addEventListener('input', function () {
+        const idnoType = document.getElementById('idnotype').value;
+        const value = this.value;
+        const errorSpan = document.getElementById('idnoError');
+
+        if (idnoType === "Rwandan") {
+            // Allow up to 16 digits only
+            if (!/^\d{0,16}$/.test(value)) {
+                this.value = value.slice(0, -1); // Revert last input if invalid
+            }
+            if (this.value.length < 16) {
+                errorSpan.textContent = "IDNO should be exactly 16 digits.";
+            } else if (!validateIDNO(this.value)) {
+                errorSpan.textContent = "Invalid IDNO format based on Rwandan rules.";
+            } else {
+                errorSpan.textContent = ""; // Clear error if valid
+            }
+        } else {
+            // No restriction on length for foreign IDNO
+            if (!/^\d*$/.test(value)) {
+                this.value = value.slice(0, -1); // Revert last input if invalid
+                errorSpan.textContent = "Foreign IDNO must contain only digits.";
+            } else {
+                errorSpan.textContent = ""; // Clear error if valid
+            }
+        }
+    });
+</script>
 
     <!-- Bootstrap and SweetAlert scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
