@@ -12,8 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Fetch the user's details from the session
         $user_id = $_SESSION['user_id'];
 
-        // Fetch the OTP from the database using PDO
-        $query = "SELECT otp_login FROM users WHERE id = :user_id";
+        // Fetch the OTP and role from the database using PDO
+        $query = "SELECT otp_login, role FROM users WHERE id = :user_id";
         $stmt = $pdo->prepare($query);
         $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
         $stmt->execute();
@@ -21,14 +21,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Check if the OTP entered matches the one in the database
         if ($user && $otp_entered == $user['otp_login']) {
-            $message = 'OTP Verified! You may proceed.';
+            $message = 'OTP Verified! Redirecting...';
             $message_type = 'success';
 
-            // Redirect after a successful verification
+            // Determine the redirect URL based on the user's role
+            $redirectURL = '';
+            switch ($user['role']) {
+                case 'Sector':
+                    $redirectURL = 'sector_dashboard.php';
+                    break;
+                case 'Court':
+                    $redirectURL = 'court_dashboard.php';
+                    break;
+                case 'User':
+                    $redirectURL = 'user_profile.php';
+                    break;
+                default:
+                    $redirectURL = 'default_dashboard.php'; // Optional: fallback
+                    break;
+            }
+
+            // Include JavaScript for redirection
             echo "
             <script>
                 setTimeout(function() {
-                    window.location.href = 'user_profile.php'; // Change 'home.php' to your actual home page URL
+                    window.location.href = '$redirectURL';
                 }, 2000);
             </script>
             ";
