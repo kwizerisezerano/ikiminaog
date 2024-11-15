@@ -17,14 +17,45 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
 
 // Fetch join requests where the logged-in user has joined tontines
-$joinRequestsStmt = $pdo->prepare("SELECT tjr.id, tjr.number_place, tjr.amount, tjr.payment_method, tjr.status, tjr.request_date, t.tontine_name 
+$joinRequestsStmt = $pdo->prepare("SELECT tjr.id, tjr.number_place, tjr.amount, tjr.payment_method,tjr.transaction_ref, tjr.status, tjr.request_date, t.tontine_name 
     FROM tontine_join_requests tjr
     JOIN tontine t ON tjr.tontine_id = t.id
     WHERE tjr.user_id = :user_id
     ORDER BY tjr.request_date DESC");
-
 $joinRequestsStmt->execute(['user_id' => $user_id]);
 $joinRequests = $joinRequestsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Process each join request to check and update payment status
+foreach ($joinRequests as $request) {
+    // Get transaction reference and current status
+    $ref_id = $request['transaction_ref']; // Assuming payment_method contains the transaction reference
+    $id = $request['id'];
+    $status = $request['status'];
+
+    // Check if the join request is still pending
+    if ($status == "Pending") {
+        // Check payment status from payment gateway
+        $paymentResponse = hdev_payment::get_pay($ref_id);
+
+        // Assuming the gateway response returns an object with a status field
+        if (isset($paymentResponse->status)) {
+            // Map payment status to join request status
+            if ($paymentResponse->status == 'success') {
+                $newStatus = "Approved";
+            } elseif ($paymentResponse->status == 'failed') {
+                $newStatus = "Failure";
+            } else {
+                $newStatus = "Pending";
+            }
+
+            // Update the status in the database
+            $updateStmt = $pdo->prepare("UPDATE tontine_join_requests SET status = :status WHERE id = :id");
+            $updateStmt->bindValue(':status', $newStatus);
+            $updateStmt->bindValue(':id', $id);
+            $updateStmt->execute();
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,6 +90,7 @@ $joinRequests = $joinRequestsStmt->fetchAll(PDO::FETCH_ASSOC);
                             <th>Amount</th>
                             <th>Payment Method</th>
                             <th>Status</th>
+                        
                             <th>Request Date</th>
                         </tr>
                     </thead>

@@ -42,18 +42,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         $transaction_ref = uniqid();
         $pay = hdev_payment::pay($payment_method, $amount, $transaction_ref, $callback = '');
 
-        // Check if payment was successful
-        if ($pay->status == 'success') {
-            // Payment was successful, insert the join request into the database
-            $stmt = $pdo->prepare("INSERT INTO tontine_join_requests (user_id, tontine_id, number_place, amount, payment_method, terms, status, transaction_ref) VALUES (:user_id, :tontine_id, :number_place, :amount, :payment_method, :terms, 'pending', :transaction_ref)");
-$stmt->bindParam(':user_id', $user_id);
-$stmt->bindParam(':tontine_id', $tontine_id);
-$stmt->bindParam(':number_place', $number_place);
-$stmt->bindParam(':amount', $amount);
-$stmt->bindParam(':payment_method', $payment_method);
-$stmt->bindParam(':terms', $terms);
-$stmt->bindParam(':transaction_ref', $transaction_ref);
+       // Check if payment was successful
+if ($pay->status == 'success') {
+    // Payment was successful, insert the join request into the database
+    $stmt = $pdo->prepare("
+        INSERT INTO tontine_join_requests 
+        (user_id, tontine_id, number_place, amount, payment_method, terms, status, reason, transaction_ref) 
+        VALUES 
+        (:user_id, :tontine_id, :number_place, :amount, :payment_method, :terms, 'Pending', 'Stay patient your request is being processed', :transaction_ref)
+    ");
 
+    // Bind parameters
+    $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+    $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+    $stmt->bindParam(':number_place', $number_place, PDO::PARAM_INT);
+    $stmt->bindParam(':amount', $amount, PDO::PARAM_STR); // Assuming amount is decimal or string
+    $stmt->bindParam(':payment_method', $payment_method, PDO::PARAM_STR);
+    $stmt->bindParam(':terms', $terms, PDO::PARAM_STR);
+    $stmt->bindParam(':transaction_ref', $transaction_ref, PDO::PARAM_STR);
 
             // After successful join request submission
 if ($stmt->execute()) {

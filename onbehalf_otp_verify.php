@@ -41,18 +41,7 @@ if (isset($_GET['phone_number'])) {
                 $updateStmt->execute();
 
                 // Redirect to index.php after successful OTP verification
-                echo "<script>
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'OTP Verified',
-                        text: 'You will be redirected shortly.',
-                        confirmButtonText: 'OK'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = 'index.php';
-                        }
-                    });
-                </script>";
+               header("location:index.php") ;
                 exit;
             } else {
                 // Show errors if OTP is incorrect

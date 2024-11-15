@@ -48,7 +48,7 @@ if (!$sectorExists) {
 }
 
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -237,29 +237,11 @@ body {
 
 .button-container .btn {
   font-size: 13px; /* Reduce font size */
-  padding: 8px 4px; /* Adjust padding for a smaller button */
+  padding: 1px 4px; /* Adjust padding for a smaller button */
   width: auto; /* Allow width to adjust based on text */
 }
 
-.button-container .btn i {
-  font-size: 16px; /* Adjust icon size */
-}
 
-      
-       
-        .custom-button:hover {
-            opacity: 0.9;
-            text-decoration: none;
-            color: #fff;
-        }
-        .right-section {
-            flex: 1;
-            background-color: #fff;
-            border-radius: 10px;
-            padding: 5px 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            /* margin: 10px; */
-        }
         .section-title {
             font-weight: bold;
             display: flex;
@@ -282,8 +264,7 @@ body {
          .edit-field,.edit-field1{
            
             border: none;
-            /* display: flex; */
-    /* align-items: center; */
+     
     outline: none;
             
          }
@@ -331,6 +312,7 @@ body {
                     <p><strong>Occurence:</strong> <?php echo htmlspecialchars($tontine['occurrence']); ?> </p>
                 <?php echo $occurrenceDisplay; ?>
                   <p><strong>Time:</strong> <?php echo htmlspecialchars($tontine['time']); ?> </p>
+                     <p><strong>Status:</strong> <?php echo htmlspecialchars($tontine['status']); ?> </p>
                   
             </div>
         </div>
@@ -362,12 +344,13 @@ body {
     <button type="button" class="btn btn-outline-info btn-verification">
         <a href="user_profile.php" class="text-primary">Home</a>
     </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-verification">
-        Request Verification
-    </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-delete">
-        Join Us
-    </button>
+    <button type="button" class="btn btn-outline-info text-primary btn-verification" onclick="requestVerification(<?php echo $id; ?>)">
+    Request Verification
+</button
+   <!-- Join Button -->
+<button type="button" class="btn btn-outline-info btn-action btn-join" onclick="confirmJoinTontine()">
+    <i class="fas fa-user-plus text-primary"></i> <p class="text-primary">Join Now</p>
+</button>
     <button type="button" class="btn btn-outline-info text-primary btn-manage-contributions">
         Contributions
     </button>
@@ -450,6 +433,20 @@ body {
 
     <i class="fas fa-pencil-alt edit-icon text-info" onclick="editField('rules')"></i>
 </div>
+<!-- Upload Button -->
+<form action="upload_terms.php" method="post" enctype="multipart/form-data" class="mb-1">
+    <input type="file" name="terms_file" accept="application/pdf" class="form-control-file mb-1">
+    <input type="hidden" name="tontine_id" value="<?php echo $id; ?>"> <!-- Pass the tontine_id -->
+    
+    <!-- Adding 'rounded' Bootstrap classes for border radius -->
+    <button type="submit" class="btn btn-info btn-sm rounded">Upload Terms and Conditions</button>
+    <button type="button" class="btn btn-info btn-sm rounded">
+        <a class="text-white"style="text-decoration:none;" href="view_terms.php?id=<?php echo $id; ?>">Read Terms and Conditions</a>
+    </button>
+     <button type="button" class="btn btn-info btn-sm rounded">
+        <a class="text-white"style="text-decoration:none;" href="tontine_join_requests.php?id=<?php echo $id; ?>">Join Requests</a>
+    </button>
+</form>
 
 <!-- Include SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -463,6 +460,80 @@ body {
    
 
 <script>
+    function requestVerification(tontineId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "Do you want to change the status to 'Justification Request sent'?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Send the request to the server
+            updateStatus(tontineId);
+        }
+    });
+}
+
+function updateStatus(tontineId) {
+    // Perform the AJAX request to update the status
+    fetch('update_status.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: tontineId, status: 'Justification Request sent' })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire(
+                'Updated!',
+                'The status has been changed to Justification Request sent.',
+                'success'
+            ).then(() => {
+                location.reload(); // Reload the page to reflect the updated status
+            });
+        } else {
+            Swal.fire(
+                'Error!',
+                'There was a problem updating the status.',
+                'error'
+            );
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire(
+            'Error!',
+            'Could not connect to the server.',
+            'error'
+        );
+    });
+}
+
+
+// Function to show the update modal
+function confirmJoinTontine() {
+    // Open your modal or form for editing
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to join this  tontine",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, I want to Join it!',
+        cancelButtonText: 'No, ',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Perform the deletion
+            window.location.href = 'join_tontine.php?id=' + <?php echo $id; ?>;
+        }
+    });
+   
+}
+
+
+
  document.addEventListener('DOMContentLoaded', function() {
             // Retrieve PHP variables and pass them into the JavaScript object
             const tontine = {

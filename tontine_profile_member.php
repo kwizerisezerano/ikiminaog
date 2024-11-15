@@ -48,7 +48,7 @@ if (!$sectorExists) {
 }
 
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -341,6 +341,7 @@ body {
                     <p><strong>Occurence:</strong> <?php echo htmlspecialchars($tontine['occurrence']); ?> </p>
                 <?php echo $occurrenceDisplay; ?>
                   <p><strong>Time:</strong> <?php echo htmlspecialchars($tontine['time']); ?> </p>
+                   <p><strong>Status:</strong> <?php echo htmlspecialchars($tontine['status']); ?> </p>
                   
             </div>
         </div>
@@ -445,7 +446,9 @@ body {
 
  
 </div>
-
+ <button type="button" class="btn btn-info btn-sm rounded">
+        <a class="text-white"style="text-decoration:none;" href="view_terms_member.php?id=<?php echo $id; ?>">Read Terms and Conditions</a>
+    </button>
 <!-- Include SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

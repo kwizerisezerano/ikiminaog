@@ -96,22 +96,13 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
                     Tontine
                 </a>
                 <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                   <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
-                     <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                    <a class="dropdown-item" href="#">Available list of Ibimina you may join</a>
-                    <a class="dropdown-item" href="#">List of Ibimina you have joined</a>
-                </div>
+                        <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
+                        <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
+                     
+                        <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
+                    </div>
             </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="accountDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Account
-                </a>
-                <div class="dropdown-menu" aria-labelledby="accountDropdown">
-                    <a class="dropdown-item" href="#">View Profile</a>
-                    <a class="dropdown-item" href="#">Update Profile</a>
-                    <a class="dropdown-item" href="#">Account Status</a>
-                </div>
-            </li>
+           
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Contributions
@@ -207,9 +198,10 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
                         ?>
 <div class="card-buttons d-flex justify-content-start">
    
-    <button class="btn btn-info btn-custom" onclick="window.location.href='tontine_profile.php?id=<?php echo $tontine['id']; ?>'">
+    <button class="btn btn-outline-primary btn-custom" onclick="window.location.href='tontine_profile.php?id=<?php echo $tontine['id']; ?>'">
         <i class="fas fa-user-circle"></i>  Profile
     </button>
+     
 </div>
 
                     </div>
@@ -223,6 +215,21 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
 <script>
+       function confirmLogout() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to log out?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, log out',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'logout.php';
+            }
+        });
+    }
+
     function updateTontine(id) {
         window.location.href = "update_tontine.php?id=" + id;
     }

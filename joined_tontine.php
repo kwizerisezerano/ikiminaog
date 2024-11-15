@@ -22,7 +22,7 @@ $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
 // Fetch join requests where the logged-in user has joined tontines
-$joinRequestsStmt = $pdo->prepare("SELECT tjr.id, tjr.number_place, tjr.amount, tjr.payment_method, tjr.status, tjr.request_date, t.tontine_name 
+$joinRequestsStmt = $pdo->prepare("SELECT tjr.transaction_ref, tjr.id, tjr.id, tjr.number_place, tjr.amount, tjr.payment_method, tjr.status, tjr.request_date, t.tontine_name,tjr.reason , tjr.payment_status
     FROM tontine_join_requests tjr
     JOIN tontine t ON tjr.tontine_id = t.id
     WHERE tjr.user_id = :user_id
@@ -33,6 +33,43 @@ $joinRequestsStmt->bindParam(':limit', $limit, PDO::PARAM_INT);
 $joinRequestsStmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 $joinRequestsStmt->execute();
 $joinRequests = $joinRequestsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($joinRequests as $joinRequest) {
+    $ref_id = $joinRequest['transaction_ref'];
+    $id = $joinRequest['id'];
+    $payment_status = $joinRequest['payment_status'];
+
+    // Check if the payment status is still pending
+    if ($payment_status == "Pending") {
+        // Fetch payment status from the payment gateway
+        $paymentResponse = hdev_payment::get_pay($ref_id);
+
+        // Assuming the gateway response contains a status field
+        if (isset($paymentResponse->status)) {
+            $status1 = $paymentResponse->status;
+
+            // Map payment status from the gateway to database values
+            $newStatus = match ($status1) {
+                'success' => "Approved",
+                'failed' => "Failure",
+                default => "Pending",
+            };
+
+            // Update the payment status in the database
+            $updateStmt = $pdo->prepare("
+                UPDATE tontine_join_requests 
+                SET payment_status = :payment_status 
+                WHERE id = :id
+            ");
+            $updateStmt->bindValue(':payment_status', $newStatus);
+            $updateStmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $updateStmt->execute();
+        }
+    }
+}
+
+
+
 
 // Fetch total number of join requests for pagination calculation
 $totalRequestsStmt = $pdo->prepare("SELECT COUNT(*) FROM tontine_join_requests WHERE user_id = :user_id");
@@ -52,7 +89,13 @@ $total_notifications = 5;
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body { background-color: #f8f9fa; }
-        .container { margin-top: 30px; }
+        .container { margin-top: 30px;
+            
+    width: 100%;
+    max-width: 100%;
+
+
+         }
         .table-container {
             background-color: #fff;
             padding: 20px;
@@ -88,21 +131,13 @@ $total_notifications = 5;
                     Tontine
                 </a>
                 <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                   <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
-                     <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                    <a class="dropdown-item" href="#">Available list of Ibimina you may join</a>
-                    <a class="dropdown-item" href="#">List of Ibimina you have joined</a>
-                </div>
+                        <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
+                        <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
+                     
+                        <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
+                    </div>
             </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="accountDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Account
-                </a>
-                <div class="dropdown-menu" aria-labelledby="accountDropdown">
-                    <a class="dropdown-item" href="#">View Profile</a>
-                    <a class="dropdown-item" href="#">Update Profile</a>
-                    <a class="dropdown-item" href="#">Account Status</a>
-                </div>
+            
             </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -165,18 +200,20 @@ $total_notifications = 5;
     </div>
 </nav>
 
-    <div class="container">
+    <div class="container ">
         <h4 class="text-center">Tontines Joined by <?php echo $user_name; ?></h4>
         <div class="table-container">
             <?php if (!empty($joinRequests)): ?>
-                <table class="table table-bordered">
+                <table class="table table-bordered ">
                     <thead>
-                        <tr>
+                        <tr class="table-primary">
                             <th>Tontine</th>
                             <th>Number of Places</th>
                             <th>Amount</th>
                             <th>Payment Method</th>
-                            <th>Status</th>
+                            <th>Status</th>                           
+                            <th>Reason</th>
+                            <th>Payment Status</th>
                             <th>Request Date</th>
                         </tr>
                     </thead>
@@ -188,6 +225,8 @@ $total_notifications = 5;
                                 <td><?php echo htmlspecialchars($request['amount']); ?></td>
                                 <td><?php echo htmlspecialchars($request['payment_method']); ?></td>
                                 <td><?php echo htmlspecialchars($request['status']); ?></td>
+                                <td><?php echo htmlspecialchars($request['reason']);?></td>
+                                <td><?php echo htmlspecialchars($request['payment_status']); ?></td>
                                 <td><?php echo htmlspecialchars($request['request_date']); ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -223,5 +262,22 @@ $total_notifications = 5;
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+           function confirmLogout() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to log out?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, log out',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'logout.php';
+            }
+        });
+    }
+
+    </script>
 </body>
 </html>
