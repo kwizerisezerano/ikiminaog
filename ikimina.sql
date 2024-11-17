@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 17, 2024 at 01:29 PM
+-- Generation Time: Nov 17, 2024 at 04:19 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -122,8 +122,10 @@ CREATE TABLE `tontine` (
 
 INSERT INTO `tontine` (`id`, `tontine_name`, `logo`, `join_date`, `province`, `district`, `sector`, `total_contributions`, `occurrence`, `time`, `day`, `date`, `created_at`, `user_id`, `role`, `purpose`, `rules`, `status`, `reason`, `interest`, `payment_frequency`, `frequent_payment_date`, `frequent_payment_day`) VALUES
 (32, 'UBUMWE bwacu', 'uploads/6727e61ea7f83.png', '2024-11-03', 'Kigali', 'Gasabo', 'Rutunga', 600.00, 'Monthly', '00:00:00', '', '2024-11-03', '2024-11-03 21:07:42', 97, 'Admin', 'raise each other', 'contribute on time bro', 'Rejected', 'no', 0.00, 'Monthly', NULL, NULL),
-(50, 'lycee de muhura', 'uploads/6731c84fa5e00.png', '2024-11-11', 'Kigali', 'Gasabo', 'Rutunga', 5.00, 'Monthly', '11:02:00', '', '2024-11-11', '2024-11-11 09:03:11', 98, 'Admin', 'rapid development through contributions and loans', 'contribute on time', 'Justified', 'ok', 0.00, 'Monthly', NULL, NULL),
-(51, 'ISHUTI ZACU', 'uploads/6734a96b90ac1.png', '2024-11-13', 'Kigali', 'Gasabo', 'Remera', 1.00, 'Daily', '15:28:00', '', '0000-00-00', '2024-11-13 13:28:11', 97, 'Admin', '', '', 'Justification Request sent', '', 0.00, 'Monthly', NULL, NULL);
+(50, 'lycee de muhura', 'uploads/6731c84fa5e00.png', '2024-11-11', 'Kigali', 'Gasabo', 'Rutunga', 5.00, 'Monthly', '11:02:00', '', '2024-11-11', '2024-11-11 09:03:11', 98, 'Admin', 'rapid development through contributions and loans mine', 'contribute on time', 'Justified', 'ok', 7.00, 'Monthly', '2024-11-17', 'Monday'),
+(51, 'ISHUTI ZACU', 'uploads/6734a96b90ac1.png', '2024-11-13', 'Kigali', 'Gasabo', 'Remera', 1.00, 'Daily', '15:28:00', '', '0000-00-00', '2024-11-13 13:28:11', 97, 'Admin', '', '', 'Justification Request sent', '', 0.00, 'Monthly', NULL, NULL),
+(52, 'ok', 'uploads/673a0450dc821.png', '2024-11-17', 'Kigali', 'Gasabo', 'Rutunga', 900.00, 'Monthly', '16:57:00', '', '0000-00-00', '2024-11-17 14:57:20', 99, 'Admin', 'raise ecah other', 'contribute on time', 'Not Justified', '', 6.00, 'Monthly', '2024-11-17', 'Monday'),
+(53, 'testing', 'uploads/673a0718706ce.png', '2024-11-17', 'East', 'Bugesera', 'Shyara', 5.00, 'Monthly', '17:09:00', '', '2024-11-17', '2024-11-17 15:09:12', 99, 'Admin', 'purpose', 'just us', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -194,8 +196,8 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `firstname`, `lastname`, `phone_number`, `idno`, `idnotype`, `idno_picture`, `behalf_name`, `behalf_phone_number`, `password`, `image`, `otp`, `verified`, `otp_used`, `otp_login`, `otp_forgot`, `otp_behalf`, `otp_behalf_used`, `terms`, `created_at`, `updated_at`, `role`) VALUES
 (96, 'MUGIRANEZA Laurent', 'love you', '0733282490', '', '', '', '', '', '$2y$10$AnJHXFWTzgw3rrocjapv8eNAhSB/ft0FSfQJFuWHByS21MkzRwoOi', '', 803587, 0, 0, 0, 0, 0, 0, 1, '2024-11-03 20:50:49', '2024-11-03 20:50:49', 'User'),
 (97, 'KWIZERISEZERANO', 'x', '0782329100', '', '', '', '', '', '$2y$10$RR1zg0.KGbWLnNCXf2AUmOd3BWYAwlYA4EobOma/ZC4Z5m.DcEG06', 'uploads/6727e48978b64.jpg', 385747, 1, 1, 138245, 0, 276850, 0, 1, '2024-11-03 20:53:56', '2024-11-16 20:09:22', 'User'),
-(98, 'KWIZERA', 'Isezerano mine', '0790989830', '1200180178531093', 'Rwandan', 'uploads/idno_67360f229e1617.09390862.jpeg', 'MUKAMUGANGA Christine', '0790989830', '$2y$10$YEWdAlYyOAv8Ew5H6ruGheVwvtTdR6I452HZS1.hviiHDSJ53YWUC', 'uploads/6735e3522857b.jpg', 195030, 1, 1, 478999, 0, 911154, 1, 1, '2024-11-09 05:39:45', '2024-11-17 06:04:42', 'User'),
-(99, 'NIYONSHUTI', 'Immacule mine', '0786397518', '1200180178531097', 'Rwandan', 'uploads/idno_6738f9c6b98995.08355114.jpg', '', '', '$2y$10$YqFTodUnuNDJJNwLD99ueO5/HU00uJhRSma9JuKaT6DV4mH..oxg6', 'uploads/6738fa088abd2.jpg', 407529, 1, 1, 830316, 0, 0, 0, 1, '2024-11-15 14:36:34', '2024-11-16 20:01:12', 'Sector'),
+(98, 'KWIZERA', 'Isezerano mine', '0790989830', '1200180178531093', 'Rwandan', 'uploads/idno_67360f229e1617.09390862.jpeg', 'MUKAMUGANGA Christine', '0790989830', '$2y$10$YEWdAlYyOAv8Ew5H6ruGheVwvtTdR6I452HZS1.hviiHDSJ53YWUC', 'uploads/6739f6a187c71.jpg', 195030, 1, 1, 478999, 0, 911154, 1, 1, '2024-11-09 05:39:45', '2024-11-17 13:58:57', 'User'),
+(99, 'NIYONSHUTI', 'Immacule mine', '0786397518', '1200180178531097', 'Rwandan', 'uploads/idno_6738f9c6b98995.08355114.jpg', '', '', '$2y$10$YqFTodUnuNDJJNwLD99ueO5/HU00uJhRSma9JuKaT6DV4mH..oxg6', 'uploads/6738fa088abd2.jpg', 407529, 1, 1, 506258, 0, 0, 0, 1, '2024-11-15 14:36:34', '2024-11-17 14:43:42', 'Sector'),
 (100, 'mine', 'bebe', '0790989839', '', '', '', '', '', '$2y$10$30wq5AYA/dONf/phlMCA7.9uutpDZRwnfCETGXI/NEpKLVzgiRHTa', '', 920277, 1, 1, 404837, 0, 0, 0, 1, '2024-11-15 15:00:58', '2024-11-15 15:03:37', 'Court');
 
 --
@@ -260,7 +262,7 @@ ALTER TABLE `pdf_files`
 -- AUTO_INCREMENT for table `tontine`
 --
 ALTER TABLE `tontine`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `tontine_join_requests`
