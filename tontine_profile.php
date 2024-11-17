@@ -351,9 +351,11 @@ body {
 <button type="button" class="btn btn-outline-info btn-action btn-join" onclick="confirmJoinTontine()">
     <i class="fas fa-user-plus text-primary"></i> <p class="text-primary">Join Now</p>
 </button>
-    <button type="button" class="btn btn-outline-info text-primary btn-manage-contributions">
-        Contributions
-    </button>
+   <!-- Join Button -->
+<button type="button" class="btn btn-outline-info btn-action btn-join" onclick="confirmContribute()">
+    <i class="fas fa-user-plus text-primary"></i> <p class="text-primary">Contribute</p>
+</button>
+
     <button type="button" class="btn btn-outline-info text-primary btn-manage-loans">
         Loans
     </button>
@@ -446,6 +448,9 @@ body {
      <button type="button" class="btn btn-info btn-sm rounded">
         <a class="text-white"style="text-decoration:none;" href="tontine_join_requests.php?id=<?php echo $id; ?>">Join Requests</a>
     </button>
+     <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="contribution_success_admin.php?id=<?php echo $id; ?>">Contributions History</a>
+    </button>
 </form>
 
 <!-- Include SweetAlert2 -->
@@ -460,6 +465,23 @@ body {
    
 
 <script>
+       function confirmContribute() {
+    // Open your modal or form for editing
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to Contribute to  this  tontine",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, I want to Contribute!',
+        cancelButtonText: 'No, ',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Perform the deletion
+            window.location.href = 'contribution.php?id=' + <?php echo $id; ?>;
+        }
+    });
+   
+}
     function requestVerification(tontineId) {
     Swal.fire({
         title: 'Are you sure?',

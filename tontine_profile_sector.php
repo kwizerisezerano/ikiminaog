@@ -138,10 +138,18 @@ if ($creator) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <style>
 
 .left-section a{
@@ -368,36 +376,54 @@ body {
 
     </div>
 
-        <!-- Buttons for Actions -->
-        <div class="button-container d-flex justify-content-start">
-    <button type="button" class="btn btn-outline-info btn-verification btn-action">
-        <a href="user_profile.php" class="text-primary">Home</a>
+<!-- Buttons for Actions -->
+<div class="button-container d-flex justify-content-center">
+  <div class="d-inline-block">
+     <button  class="btn btn-info">
+        <a href="sector_dashboard.php" class="text-white">Home</a>
     </button>
+    <button class="btn btn-warning" onclick="openModal('Justified', <?php echo $id; ?>)">Justify</button>
+    <button class="btn btn-danger" onclick="openModal('Rejected', <?php echo $id; ?>)">Reject</button>
+  </div>
+</div>
+
+
     
-<!-- Join Button -->
-<button type="button" class="btn btn-outline-info btn-action btn-join" onclick="confirmJoinTontine()">
-    <i class="fas fa-user-plus text-primary"></i> <p class="text-primary">Join Now</p>
-</button>
-
-<!-- Join Button -->
-<button type="button" class="btn btn-outline-info btn-action btn-join" onclick="confirmContribute()">
-    <i class="fas fa-user-plus text-primary"></i> <p class="text-primary">Contribute</p>
-</button>
-<!-- Join Button -->
-<button type="button" class="btn btn-outline-info btn-action btn-join" onclick="confirmLoan()">
-    <i class="fas fa-user-plus text-primary"></i> <p class="text-primary">Apply Loan</p>
-</button>
 
 
-</button>
-<button type="button" class="btn btn-outline-info btn-verification btn-action ">
-        <a href="user_profile.php" class="text-blue"><i class="fas fa-bell "></i></a>
-    </button>
+
+
 
 </div>
 
 
+
+
+
+
+
+<!-- Modal for justification or rejection -->
+<div id="reasonModal" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Provide Reason</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <textarea id="reason" class="form-control" placeholder="Enter reason here..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="submitBtn" onclick="submitReason()">Submit</button>
+      </div>
     </div>
+  </div>
+</div>
+
+
 
     <!-- Right Section -->
 <div class="right-section p-3">
@@ -455,10 +481,7 @@ body {
  
 </div>
  <button type="button" class="btn btn-info btn-sm rounded">
-        <a class="text-white"style="text-decoration:none;" href="view_terms_member.php?id=<?php echo $id; ?>">Read Terms and Conditions</a>
-    </button>
-    <button type="button" class="btn btn-info btn-sm rounded">
-        <a class="text-white"style="text-decoration:none;" href="contribution_success.php?id=<?php echo $id; ?>">Contributions History</a>
+        <a class="text-white"style="text-decoration:none;" href="view_terms_sector.php?id=<?php echo $id; ?>">Read Terms and Conditions</a>
     </button>
 <!-- Include SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -472,6 +495,70 @@ body {
    
 
 <script>
+ 
+ function openModal(status, tontine_id) {
+  // Open the modal
+  $('#reasonModal').modal('show');
+  
+  // Store the status and tontine_id
+  $('#submitBtn').data('status', status);
+  $('#submitBtn').data('tontine_id', tontine_id);
+}
+function submitReason() {
+  // Get the reason, tontine_id, and status
+  var reason = $('#reason').val();
+  var tontine_id = $('#submitBtn').data('tontine_id');
+  var status = $('#submitBtn').data('status');
+
+  if (!reason) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Reason',
+      text: 'Please provide a reason before submitting.',
+    });
+    return;
+  }
+
+  // Send the data to the server via AJAX
+  $.ajax({
+    url: 'update_tontine_status.php',
+    method: 'POST',
+    data: {
+      tontine_id: tontine_id,
+      status: status,
+      reason: reason,
+    },
+    success: function (response) {
+      var res = JSON.parse(response); // Parse the JSON response
+
+      if (res.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: res.message,
+        }).then(() => {
+          $('#reasonModal').modal('hide'); // Close the modal
+          location.reload(); // Optionally reload the page to reflect changes
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: res.message,
+        });
+      }
+    },
+    error: function () {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An unexpected error occurred while updating the status.',
+      });
+    },
+  });
+}
+
+
  document.addEventListener('DOMContentLoaded', function() {
             // Retrieve PHP variables and pass them into the JavaScript object
             const tontine = {
@@ -552,119 +639,9 @@ body {
             const interval = setInterval(updateCountdown, 1000);
         }
 
-      function confirmLoan() {
-    // Open your modal or form for editing
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "You want to Apply loan in   this  tontine",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, I want to Apply!',
-        cancelButtonText: 'No, ',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Perform the deletion
-            window.location.href = 'loan.php?id=' + <?php echo $id; ?>;
-        }
-    });
-   
-}
 
 
 
-
-
-        function confirmContribute() {
-    // Open your modal or form for editing
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "You want to Contribute to  this  tontine",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, I want to Contribute!',
-        cancelButtonText: 'No, ',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Perform the deletion
-            window.location.href = 'contribution.php?id=' + <?php echo $id; ?>;
-        }
-    });
-   
-}
-// Function to show the update modal
-function confirmJoinTontine() {
-    // Open your modal or form for editing
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "You want to join this  tontine",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, I want to Join it!',
-        cancelButtonText: 'No, ',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Perform the deletion
-            window.location.href = 'join_tontine.php?id=' + <?php echo $id; ?>;
-        }
-    });
-   
-}
-// Function to trigger SweetAlert popup for editing either Purpose or Rules
-function editField(field) {
-    let fieldValue = document.getElementById(field + '-field').value;
-
-    // Open SweetAlert popup
-    Swal.fire({
-        title: 'Edit ' + field.charAt(0).toUpperCase() + field.slice(1),
-        input: 'text',
-        inputValue: fieldValue,
-        showCancelButton: true,
-        confirmButtonText: 'Save',
-        cancelButtonText: 'Cancel',
-        inputValidator: (value) => {
-            if (!value) {
-                return 'You need to write something!';
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            let newValue = result.value;
-
-            // Send the updated value to the server to save it
-            updateFieldInDatabase(field, newValue);
-        }
-    });
-}
-
-// Function to send AJAX request to update field in the database
-function updateFieldInDatabase(field, newValue) {
-    // Assuming you have the tontine ID available in JavaScript (e.g., from a global variable or URL)
-    let tontineId = <?php echo $id; ?>;  // Dynamically retrieve the Tontine ID from PHP
-
-    let data = new FormData();
-    data.append('field', field);
-    data.append('value', newValue);
-    data.append('id', tontineId); // Append the tontine ID to the data
-
-    // Use the fetch API to send the request to the server
-    fetch('update_field.php', {
-        method: 'POST',
-        body: data
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update the value in the input field
-            document.getElementById(field + '-field').value = newValue;
-            Swal.fire('Success', 'Your ' + field + ' has been updated!', 'success');
-        } else {
-            Swal.fire('Error', 'Failed to update the ' + field, 'error');
-        }
-    })
-    .catch(error => {
-        Swal.fire('Error', 'An error occurred while updating', 'error');
-    });
-}
 </script>
 </body>
 </html>

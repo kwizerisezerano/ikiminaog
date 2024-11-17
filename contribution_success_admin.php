@@ -11,8 +11,10 @@ if (!isset($_SESSION['user_id'])) {
 // Fetch user ID from session
 $user_id = $_SESSION['user_id'];
 
+// Initialize variables
 $error = "";
 $tontineName = "";
+$results_per_page = 5; // Set the number of results per page
 $total_notifications = 5;
 
 // Fetch user details
@@ -21,81 +23,66 @@ $stmt->bindParam(':id', $user_id);
 $stmt->execute();
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($user) {
-    $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
-} else {
-    $user_name = "Unknown User";  // or handle as needed
-}
+$user_name = $user ? htmlspecialchars($user['firstname'] . ' ' . $user['lastname']) : "Unknown User";
 
 // Get the tontine ID from the URL
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// Set the number of results per page
-$results_per_page = 5;
-
-// Calculate the total number of pages
-$query = "SELECT COUNT(*) FROM tontine_join_requests WHERE tontine_id = :id";
+// Calculate the total number of records
+$query = "SELECT COUNT(*) FROM contributions WHERE tontine_id = :id";
 $stmt = $pdo->prepare($query);
 $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 $stmt->execute();
 $total_requests = $stmt->fetchColumn();
+
+// Calculate the total number of pages
 $total_pages = ceil($total_requests / $results_per_page);
 
-// Determine the current page
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+// Get the current page or default to 1
+$page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+if ($page > $total_pages) $page = $total_pages;
+
+// Calculate the starting row
 $start_from = ($page - 1) * $results_per_page;
 
-// Fetch tontine name and join requests with pagination and search
-$search_query = isset($_POST['search_query']) ? '%' . $_POST['search_query'] . '%' : '%%';
+// Optional: Add a search feature
+$search_query = isset($_GET['search']) ? '%' . $_GET['search'] . '%' : '%';
 
-try {
-    $tontineStmt = $pdo->prepare("SELECT tontine_name FROM tontine WHERE id = :id");
-    $tontineStmt->bindParam(':id', $id, PDO::PARAM_INT);
-    $tontineStmt->execute();
-    $tontine = $tontineStmt->fetch(PDO::FETCH_ASSOC);
+// Fetch contributions with pagination
+$query = "
+    SELECT c.amount, c.contribution_date, c.payment_method, c.transaction_ref,
+           u.firstname, u.lastname
+    FROM contributions c
+    JOIN users u ON c.user_id = u.id
+    WHERE c.tontine_id = :id AND (
+        u.firstname LIKE :search_query OR 
+        u.lastname LIKE :search_query OR 
+        c.transaction_ref LIKE :search_query
+    )
+    ORDER BY c.contribution_date DESC
+    LIMIT :start_from, :results_per_page
+";
 
-    if ($tontine) {
-        $tontineName = $tontine['tontine_name'];
+$stmt = $pdo->prepare($query);
+$stmt->bindParam(':id', $id, PDO::PARAM_INT);
+$stmt->bindValue(':search_query', $search_query, PDO::PARAM_STR);
+$stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
+$stmt->bindParam(':results_per_page', $results_per_page, PDO::PARAM_INT);
+$stmt->execute();
+$contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Fetch join requests
-        $stmt = $pdo->prepare("
-            SELECT tjr.reason, tjr.id, tjr.number_place, tjr.amount, tjr.payment_method, tjr.status, 
-                   tjr.request_date, tjr.terms, tjr.transaction_ref, t.tontine_name, 
-                   u.firstname, u.lastname
-            FROM tontine_join_requests tjr
-            JOIN tontine t ON tjr.tontine_id = t.id
-            JOIN users u ON tjr.user_id = u.id
-            WHERE tjr.tontine_id = :id AND (
-                u.firstname LIKE :search_query OR 
-                u.lastname LIKE :search_query OR 
-                tjr.transaction_ref LIKE :search_query
-            )
-            LIMIT :start_from, :results_per_page
-        ");
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->bindParam(':search_query', $search_query, PDO::PARAM_STR);
-        $stmt->bindParam(':start_from', $start_from, PDO::PARAM_INT);
-        $stmt->bindParam(':results_per_page', $results_per_page, PDO::PARAM_INT);
-        $stmt->execute();
-        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (!$requests) {
-            $error = "No requests found for the provided Tontine ID.";
-        }
-    } else {
-        $error = "Tontine not found.";
-    }
-} catch (Exception $e) {
-    $error = "Error fetching request details: " . $e->getMessage();
+if (!$contributions) {
+    $error = "No contributions found for the provided Tontine ID.";
 }
 
 
+
 // Fetch the count of each request status
-$statuses = ['Pending', 'Permitted', 'Rejected'];
+$statuses = ['Pending', 'Approved', 'Failure'];
 $status_counts = [];
 
 foreach ($statuses as $status) {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM tontine_join_requests WHERE tontine_id = :id AND status = :status");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM contributions WHERE tontine_id = :id AND payment_status = :status");
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->bindParam(':status', $status, PDO::PARAM_STR);
     $stmt->execute();
@@ -104,8 +91,8 @@ foreach ($statuses as $status) {
 
 // Total applications count
 $total_applications = array_sum($status_counts);
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -256,7 +243,7 @@ $total_applications = array_sum($status_counts);
     <div class="col-md-3">
         <div class="card bg-outline-info text-info">
             <div class="card-body">
-                <h6>Total Applications</h6>
+                <h6>Total Contributions</h6>
                 <p><?php echo $total_applications; ?></p>
             </div>
         </div>
@@ -264,7 +251,7 @@ $total_applications = array_sum($status_counts);
     <div class="col-md-3">
         <div class="card bg-outline-primary text-primary">
             <div class="card-body">
-                <h6>Total Pending Applications</h6>
+                <h6>Pending Contributions</h6>
                 <p><?php echo $status_counts['Pending']; ?></p>
             </div>
         </div>
@@ -272,73 +259,55 @@ $total_applications = array_sum($status_counts);
     <div class="col-md-3">
         <div class="card bg-outline-success text-success">
             <div class="card-body">
-                <h6>Total Approved Applications</h6>
-                <p><?php echo $status_counts['Permitted']; ?></p>
+                <h6> Approved Contributions</h6>
+                <p><?php echo $status_counts['Approved']; ?></p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card bg-outline-danger text-danger">
             <div class="card-body">
-                <h6>Total Rejected Applications</h6>
-                <p><?php echo $status_counts['Rejected']; ?></p>
+                <h6>Failed Contributions</h6>
+                <p><?php echo $status_counts['Failure']; ?></p>
             </div>
         </div>
     </div>
 </div>
 
 
-    <!-- Join Request Details -->
-    <div class="mt-1">
-        <?php if ($error): ?>
-            <div class="alert alert-danger text-center" role="alert">
-                <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php else: ?>
-            <div class="table-responsive table-container">
-    <table class="table table-bordered table-custom-width">
-                    <thead class="thead-dark">
-                    <tr>
-                <th>ID</th>
-                <th class="no-display">User</th>
-                <th class="no-display">Number of Places</th>
-                <th class="no-display">Amount</th>
+<div class="table-responsive">
+    <table class="table table-striped table-bordered table-hover">
+        <thead class="thead-primary">
+            <tr>
+                <th>#</th>
+                <th>Contributor Name</th>
+                <th>Amount</th>
+                <th>Contribution Date</th>
                 <th>Payment Method</th>
-                <th>Status</th>
-                 <th>Reason</th>
-                <th>Request Date</th>
-               
-                <th>Actions</th>
+                <th>Transaction Reference</th>
             </tr>
         </thead>
         <tbody>
-            <?php 
-            $count = 1; // Initialize counter
-            foreach ($requests as $request): ?>
+            <?php if (!empty($contributions)): ?>
+                <?php foreach ($contributions as $index => $contribution): ?>
+                    <tr>
+                        <td><?php echo $index + 1; ?></td>
+                        <td><?php echo htmlspecialchars($contribution['firstname'] . ' ' . $contribution['lastname']); ?></td>
+                        <td><?php echo number_format($contribution['amount'], 2); ?></td>
+                        <td><?php echo htmlspecialchars($contribution['contribution_date']); ?></td>
+                        <td><?php echo htmlspecialchars($contribution['payment_method']); ?></td>
+                        <td><?php echo htmlspecialchars($contribution['transaction_ref']); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
                 <tr>
-                    <td><?php echo $count++; ?></td> <!-- Display count and increment -->
-                    <td class="no-display"><?php echo htmlspecialchars($request['firstname'] . ' ' . $request['lastname']); ?></td>
-                    <td class="no-display"><?php echo htmlspecialchars($request['number_place']); ?></td>
-                    <td class="no-display"><?php echo htmlspecialchars($request['amount']); ?></td>
-                    <td><?php echo htmlspecialchars($request['payment_method']); ?></td>
-                    <td><?php echo htmlspecialchars($request['status']); ?></td>
-                   
-                    <td><?php echo htmlspecialchars($request['reason']); ?></td>
-                     <td><?php echo htmlspecialchars($request['request_date']); ?></td>
-                    <td class="actions">
-                                <a href="view_request.php?id=<?php echo $request['id']; ?>" class="btn btn-info btn-sm">View</a>
-                                   
-
-                                </td>
+                    <td colspan="6" class="text-center">No contributions found.</td>
                 </tr>
-            <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
+    </table>
+</div>
 
-      
-    </div>
      <!-- Pagination -->
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center">
