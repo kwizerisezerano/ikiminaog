@@ -48,7 +48,7 @@ if (!$sectorExists) {
 }
 
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status, interest, payment_frequency ,frequent_payment_date,frequent_payment_day FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -67,14 +67,15 @@ if (!$tontine) {
     die("Tontine details not found.");
 }
 
-// Fetch contact of the user who created the tontine (Admin role)
-$creator_id = $tontine['user_id'];
-$stmt = $pdo->prepare("SELECT phone_number FROM users WHERE id = :id");
-$stmt->bindParam(':id', $creator_id);
-$stmt->execute();
-$creator = $stmt->fetch(PDO::FETCH_ASSOC);
-$creator_contact = htmlspecialchars($creator['phone_number']);
+// // Prepare the query to fetch the phone number of the Admin user
+// $stmt = $pdo->prepare("SELECT phone_number FROM users WHERE id = :id AND role = 'Admin'");
+// $stmt->bindParam(':id', $creator_id, PDO::PARAM_INT);
+// $stmt->execute();
 
+// // Fetch the result
+// $creator = $stmt->fetch(PDO::FETCH_ASSOC);
+//  $creator_contact = htmlspecialchars($creator['phone_number'], ENT_QUOTES, 'UTF-8');
+    
 // Build the path for the logo image
 $logoFilePath = htmlspecialchars($tontine['logo']);
 if (empty($tontine['logo']) || !file_exists($logoFilePath)) {
@@ -108,7 +109,7 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 1;
 
 // Prepare and execute the query to fetch the creator's name using a JOIN
 $stmt = $pdo->prepare("
-    SELECT users.firstname, users.lastname
+    SELECT users.firstname, users.lastname,users.phone_number
     FROM tontine
     JOIN users ON tontine.user_id = users.id
     WHERE tontine.id = :id
@@ -118,6 +119,7 @@ $stmt->execute();
 
 // Fetch the creator's details
 $creator = $stmt->fetch(PDO::FETCH_ASSOC);
+$creator_contact = htmlspecialchars($creator['phone_number']);
 
 // Check if the creator data is found
 if ($creator) {
@@ -434,7 +436,7 @@ body {
            
         </div>
         <p class="mb-1"><strong>Created by:</strong> <?php echo htmlspecialchars($creator_name); ?></p>
-        <p><strong>Contact:</strong> <?php echo htmlspecialchars($user_contact); ?></p>
+        <p><strong>Contact:</strong> <?php echo htmlspecialchars($creator_contact); ?></p>
     </div>
 
     <!-- Contributions, Loans, Penalties Section -->
@@ -446,7 +448,35 @@ body {
 
         <div class="section-item mb-1">
             <h6 class="text-info">Loans</h6>
-            <p><strong>Interest Rate:</strong> 5%</p>
+            <p><strong>Interest Rate:</strong> <?php echo intval($tontine['interest']).'%'; ?></p>
+            <p><strong>Payment Frequency:</strong> 
+    <?php 
+        // Display payment frequency
+        echo $tontine['payment_frequency'];
+
+        // Check if payment frequency is weekly or monthly and display additional details
+        if ($tontine['payment_frequency'] === 'Weekly') {
+            // For weekly payments, display the frequent_payment_day if set
+            if (!empty($tontine['frequent_payment_day'])) {
+                echo ' [Day: ' . $tontine['frequent_payment_day'] . ']';
+            } else {
+                echo ' [No specific day set for weekly payments]';
+            }
+        } elseif ($tontine['payment_frequency'] === 'Monthly') {
+            // For monthly payments, display the frequent_payment_date if set
+            if (!empty($tontine['frequent_payment_date'])) {
+                echo ' [Date: ' . date('F j, Y', strtotime($tontine['frequent_payment_date'])) . ']';
+            } else {
+                echo ' [No specific date set for monthly payments]';
+            }
+        } else {
+            // If payment frequency is neither weekly nor monthly, show a default message
+            echo ' [Invalid payment frequency]';
+        }
+    ?>
+</p>
+
+
           
         </div>
 

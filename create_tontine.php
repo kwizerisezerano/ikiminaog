@@ -357,6 +357,8 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
+        document.getElementById('join_date').value = new Date().toISOString().split('T')[0];
+
 document.getElementById('registrationForm').addEventListener('submit', function(e) {
     e.preventDefault(); // Prevent default form submission
 
