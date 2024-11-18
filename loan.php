@@ -203,7 +203,7 @@ $total_notifications = 5;
 </nav>
 
 <div class="form-container mt-3">
-    <h5 class="form-title">Welcome to Join <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
+    <h5 class="form-title">Welcome to  <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
     
     <form id="joinForm" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">

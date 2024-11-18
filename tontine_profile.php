@@ -615,85 +615,100 @@ function confirmJoinTontine() {
 
 
 
- document.addEventListener('DOMContentLoaded', function() {
-            // Retrieve PHP variables and pass them into the JavaScript object
-            const tontine = {
-                occurrence: "<?php echo $tontine['occurrence']; ?>", // Dynamic occurrence (daily, weekly, monthly)
-                time: "<?php echo $time; ?>",
-                day: "<?php echo $day; ?>", // For weekly occurrences
-                date: "<?php echo $day_of_month; ?>" // For monthly occurrences
-            };
+document.addEventListener('DOMContentLoaded', function() {
+    // Retrieve PHP variables and pass them into the JavaScript object
+    const tontine = {
+        occurrence: "<?php echo $tontine['occurrence']; ?>", // Dynamic occurrence (daily, weekly, monthly)
+        time: "<?php echo $time; ?>",
+        day: "<?php echo $day; ?>", // For weekly occurrences
+        date: "<?php echo $day_of_month; ?>" // For monthly occurrences
+    };
 
-            startCountdown(tontine);
-        });
+    startCountdown(tontine);
+});
 
-        function startCountdown(tontine) {
-            const { occurrence, time, day, date } = tontine;
+function startCountdown(tontine) {
+    const { occurrence, time, day, date } = tontine;
 
-            function getNextOccurrence() {
-                const now = new Date();
-                let targetDate;
+    function getNextOccurrence() {
+        const now = new Date();
+        let targetDate;
 
-                if (occurrence === "Daily") {
-                    targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), ...time.split(":"));
-                    if (now > targetDate) {
-                        targetDate.setDate(targetDate.getDate() + 1); // If today has passed, set to tomorrow
-                    }
-                }
-
-                if (occurrence === "Weekly") {
-                    const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-                    let targetDay = weekdays.indexOf(day);
-                    targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), ...time.split(":"));
-
-                    // Adjust to the correct day of the week
-                    if (now.getDay() <= targetDay) {
-                        targetDate.setDate(now.getDate() + (targetDay - now.getDay())); // Next occurrence
-                    } else {
-                        targetDate.setDate(now.getDate() + (7 - (now.getDay() - targetDay))); // Next week's occurrence
-                    }
-                }
-
-                if (occurrence === "Monthly") {
-                    targetDate = new Date(now.getFullYear(), now.getMonth(), date, ...time.split(":"));
-                    if (now > targetDate) {
-                        targetDate.setMonth(targetDate.getMonth() + 1); // Set for the next month if the date has passed
-                    }
-                }
-
-                return targetDate;
+        if (occurrence === "Daily") {
+            targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), ...time.split(":"));
+            if (now > targetDate) {
+                targetDate.setDate(targetDate.getDate() + 1); // If today has passed, set to tomorrow
             }
-
-            function updateCountdown() {
-                const targetDate = getNextOccurrence();
-                const now = new Date();
-                const distance = targetDate - now;
-
-                if (distance > 0) {
-                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    // Display the countdown in the respective HTML elements
-                    document.getElementById("days").innerText = days.toString().padStart(2, '0');
-                    document.getElementById("hours").innerText = hours.toString().padStart(2, '0');
-                    document.getElementById("minutes").innerText = minutes.toString().padStart(2, '0');
-                    document.getElementById("seconds").innerText = seconds.toString().padStart(2, '0');
-                } else {
-                    clearInterval(interval);
-                    alert("Tontine has started!");
-                    document.getElementById("days").innerText = "00";
-                    document.getElementById("hours").innerText = "00";
-                    document.getElementById("minutes").innerText = "00";
-                    document.getElementById("seconds").innerText = "00";
-                }
-            }
-
-            // Start the countdown immediately and set an interval to update every second
-            updateCountdown();
-            const interval = setInterval(updateCountdown, 1000);
         }
+
+        if (occurrence === "Weekly") {
+            const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            let targetDay = weekdays.indexOf(day);
+            targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), ...time.split(":"));
+
+            // Adjust to the correct day of the week
+            if (now.getDay() <= targetDay) {
+                targetDate.setDate(now.getDate() + (targetDay - now.getDay())); // Next occurrence
+            } else {
+                targetDate.setDate(now.getDate() + (7 - (now.getDay() - targetDay))); // Next week's occurrence
+            }
+        }
+
+        if (occurrence === "Monthly") {
+            targetDate = new Date(now.getFullYear(), now.getMonth(), date, ...time.split(":"));
+            if (now > targetDate) {
+                targetDate.setMonth(targetDate.getMonth() + 1); // Set for the next month if the date has passed
+            }
+        }
+
+        return targetDate;
+    }
+
+    function updateCountdown() {
+    const targetDate = getNextOccurrence();
+    const now = new Date();
+    const distance = targetDate - now;
+
+    if (distance > 0) {
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Check if the current date matches the target date (ignoring time)
+        const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const targetOnlyDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+        const isToday = nowDate.getTime() === targetOnlyDate.getTime();
+
+        if (isToday) {
+            // If today, display only hours, minutes, and seconds
+            document.getElementById("days").innerText = "00";
+            document.getElementById("hours").innerText = hours.toString().padStart(2, '0');
+            document.getElementById("minutes").innerText = minutes.toString().padStart(2, '0');
+            document.getElementById("seconds").innerText = seconds.toString().padStart(2, '0');
+        } else {
+            // Otherwise, include days in the countdown
+            document.getElementById("days").innerText = days.toString().padStart(2, '0');
+            document.getElementById("hours").innerText = hours.toString().padStart(2, '0');
+            document.getElementById("minutes").innerText = minutes.toString().padStart(2, '0');
+            document.getElementById("seconds").innerText = seconds.toString().padStart(2, '0');
+        }
+    } else {
+        clearInterval(interval);
+        alert("Tontine has started!");
+        document.getElementById("days").innerText = "00";
+        document.getElementById("hours").innerText = "00";
+        document.getElementById("minutes").innerText = "00";
+        document.getElementById("seconds").innerText = "00";
+    }
+}
+
+
+    // Start the countdown immediately and set an interval to update every second
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+}
+
 // Function to show delete confirmation
 function confirmDelete() {
     Swal.fire({
