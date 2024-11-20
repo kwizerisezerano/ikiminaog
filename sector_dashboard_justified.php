@@ -35,7 +35,7 @@ try {
     $stmt = $pdo->prepare("
     SELECT * 
     FROM tontine 
-    WHERE tontine_name LIKE :search_query AND status='Justification Request sent'
+    WHERE tontine_name LIKE :search_query AND status='Justified'
     LIMIT $start_from, $results_per_page
 ");
 
@@ -200,8 +200,8 @@ $total_pages = ceil($total_requests / $results_per_page);
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <!-- Navbar -->
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>

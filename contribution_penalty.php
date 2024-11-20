@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // Fetch user details
-$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image, idno, behalf_name, behalf_phone_number, idno_picture, otp_behalf_used FROM users WHERE id = :id");
+$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image,idno,behalf_name,behalf_phone_number ,idno_picture,otp_behalf_used FROM users WHERE id = :id");
 $stmt->bindParam(':id', $user_id);
 $stmt->execute();
 
@@ -22,12 +22,11 @@ if (!$user) {
     exit();
 }
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
-
 // Get tontine ID from the URL
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Fetch tontine details
-$stmt = $pdo->prepare("SELECT tontine_name, total_contributions FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name FROM tontine WHERE id = :id");
 $stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
 $stmt->execute();
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -36,28 +35,22 @@ $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$tontine) {
     die("Tontine not found.");
 }
-$total_notifications=5;
+
 // Get the total contributions for calculation
-$total_contributions = $tontine['total_contributions'];
+// $total_contributions = $tontine['interest'];
 
-// Check if user has joined the Tontine
-$stmt = $pdo->prepare("SELECT amount FROM tontine_join_requests WHERE tontine_id = :tontine_id AND user_id = :user_id");
-$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
-$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-$stmt->execute();
+// Notification count
+$total_notifications = 5;
 
-$result = $stmt->fetch(PDO::FETCH_ASSOC);
+ // Prepare and execute the query
+        $stmt = $pdo->prepare("SELECT amount FROM tontine_join_requests WHERE tontine_id = :tontine_id AND user_id = :user_id");
+        $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->execute();
 
-// If amount is not available, redirect immediately
-if (!$result || empty($result['amount'])) {
-    header("Location: join_tontine.php?id=" . $tontine_id);
-    exit();
-}
-
-// If user is eligible, continue processing...
+        // Fetch the result
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -213,32 +206,35 @@ if (!$result || empty($result['amount'])) {
     <h5 class="form-title">Welcome to Join <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
     
     <form id="joinForm" method="POST">
-        <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
-        <input type="hidden" id="total_contributions" value="<?php echo $total_contributions; ?>">
+    <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
 
-     
-        <div class="mb-3">
-            <label for="amount" class="form-label">Amount</label>
-            <input type="text" class="form-control" id="amount" name="amount" readonly value="<?php echo $result['amount'];?>">
-        </div>
+    <!-- Existing form fields -->
 
-        <div class="mb-3">
-            <label for="payment_method" class="form-label">Payment Method</label>
-            <input type="text" class="form-control" id="payment_method" name="payment_method" value="<?php echo $user['phone_number']; ?>" readonly>
-        </div>
+    <!-- Interest -->
+    <div class="mb-3">
+        <label for="interest" class="form-label">Amount</label>
+        <input type="number" class="form-control" id="interest" name="interest" step="0.01" value="">
+    </div>
 
-       
 
-        <button type="submit" class="btn btn-submit" id="submitBtn" >Submit Join Request</button>
-    </form>
+    <button type="submit" class="btn btn-submit">Update Penalty</button>
+</form>
 </div>
 
 <script>
-  $('#joinForm').on('submit', function(e) {
+
+
+    $('#joinForm').on('submit', function(e) {
     e.preventDefault();
 
+    var interest = $('#interest').val();
+    if (interest < 0) {
+        Swal.fire('Error', 'Interest cannot be negative.', 'error');
+        return;
+    }
+
     $.ajax({
-        url: 'submit_contribution.php',
+        url: 'submit_contribution_update.php',
         type: 'POST',
         data: $(this).serialize(),
         success: function(response) {
@@ -248,8 +244,8 @@ if (!$result || empty($result['amount'])) {
                 text: res.message,
                 icon: res.status === 'success' ? 'success' : 'error',
             }).then(() => {
-                if (res.status === 'success' && res.redirect) {
-                    window.location.href = res.redirect;
+                if (res.status === 'success' && res.redirect_to) {  // Change res.redirect to res.redirect_to
+                    window.location.href = res.redirect_to;  // Use res.redirect_to instead of res.redirect
                 }
             });
         },

@@ -26,18 +26,20 @@ $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Fetch tontine details
-$stmt = $pdo->prepare("SELECT tontine_name, total_contributions FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, interest,payment_frequency ,frequent_payment_date,frequent_payment_day FROM tontine WHERE id = :id");
 $stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
 $stmt->execute();
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
+$interest=$tontine['interest'];
+
+
 
 // Check if tontine exists
 if (!$tontine) {
     die("Tontine not found.");
 }
 
-// Get the total contributions for calculation
-$total_contributions = $tontine['total_contributions'];
+
 
 // Notification count
 $total_notifications = 5;
@@ -226,22 +228,22 @@ $total_notifications = 5;
             <small id="amountRange" class="form-text text-muted">Amount Range: 500 - 10,000 (Small), 10,000 - 50,000 (Medium), 50,000 - 100,000 (Large)</small>
         </div>
 
-        <!-- Interest Rate -->
+        Interest amount
         <div class="mb-3">
             <label for="interest" class="form-label">Interest</label>
-            <input type="text" class="form-control" id="interest" name="interest" value="5%" readonly>
+            <input type="text" class="form-control" id="interest" name="interest-amount" value="">
         </div>
 
-        <!-- Payment Frequency -->
+        <!-- Payment Frequency
         <div class="mb-3">
             <label for="payment_frequency" class="form-label">Payment Frequency</label>
-            <input type="text" class="form-control" id="payment_frequency" name="payment_frequency" value="Monthly" readonly>
-        </div>
+            <input type="text" class="form-control" id="payment_frequency" name="payment_frequency" value="<?php echo $tontine['payment_frequency'];?>" readonly>
+        </div> -->
 
         <!-- Total Amount -->
         <div class="mb-3">
             <label for="total_amount" class="form-label">Total Amount</label>
-            <input type="text" class="form-control" id="total_amount" name="total_amount" readonly>
+            <input type="text" class="form-control" id="total_amount" name="total_amount"  >
         </div>
 
         <!-- Upload Collateral (PDF) -->
@@ -285,9 +287,7 @@ $total_notifications = 5;
                 break;
         }
 
-        amountField.min = min;
-        amountField.max = max;
-        totalAmountField.value = `Loan Amount: ${min} - ${max}`;
+      
     }
 
     // Initialize loan range on page load

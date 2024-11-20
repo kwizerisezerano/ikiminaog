@@ -48,7 +48,7 @@ if (!$sectorExists) {
 }
 
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status,interest, payment_frequency ,frequent_payment_date,frequent_payment_day FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status,interest, payment_frequency ,frequent_payment_date,frequent_payment_day,late_contribution_penalty  FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -439,8 +439,8 @@ body {
 
         <div class="section-item mb-1 pb-1">
             <h6 class="text-info">Penalties</h6>
-            <p><strong>Late Fee:</strong> 100 RWF per day</p>
-            <p><strong>Missed Contributions:</strong> Subject to review</p>
+            <p><strong> Contribution Late Fee:</strong> <?php echo $tontine['late_contribution_penalty']; ?> RWF per 1 place</p>
+          
         </div>
     </div>
 <!-- Purpose & Rules Section -->
@@ -485,6 +485,12 @@ body {
     </button>
       <button type="button" class="btn btn-info btn-sm rounded mt-1">
         <a class="text-white "style="text-decoration:none;" href="loan_related_updates.php?id=<?php echo $id; ?>">Update Loans </a>
+    </button>
+      <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="contribution_dates_admin.php?id=<?php echo $id; ?>">Contribution dates  </a>
+    </button>
+       <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="contribution_penalty.php?id=<?php echo $id; ?>">Contribution penalty amount</a>
     </button>
 </form>
 

@@ -58,7 +58,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             exit;
         }
 
-     
+        // Recursive query to generate contribution dates
+        $query = "
+        WITH RECURSIVE contribution_dates AS (
+            SELECT 
+                join_date AS contribution_date,
+                occurrence,
+                join_date,
+                ADDDATE(join_date, INTERVAL 1 YEAR) AS end_date
+            FROM tontine
+            WHERE id = :id
+
+            UNION ALL
+
+            SELECT 
+                CASE
+                    WHEN occurrence = 'Daily' THEN DATE_ADD(contribution_date, INTERVAL 1 DAY)
+                    WHEN occurrence = 'Weekly' THEN DATE_ADD(contribution_date, INTERVAL 7 DAY)
+                    WHEN occurrence = 'Monthly' THEN DATE_ADD(contribution_date, INTERVAL 1 MONTH)
+                END,
+                occurrence,
+                join_date,
+                end_date
+            FROM contribution_dates
+            WHERE contribution_date < end_date
+        )
+        SELECT contribution_date FROM contribution_dates;
+        ";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $contribution_dates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get the most recent contribution date
+        $most_recent_contribution = end($contribution_dates)['contribution_date']; // Get the last contribution date
+
+        // Check if the current date is past the most recent contribution date
+        if (strtotime($most_recent_contribution) < time()) {
+            // Contribution is late
+            echo json_encode([
+                'status' => 'error',
+                'title' => 'Contribution Late',
+                'message' => 'Your contribution is late. The most recent contribution date was ' . $most_recent_contribution . '.',
+            ]);
+            $pdo->rollBack();
+            exit;
+        }
+
         // Simulate payment process
         $transaction_ref = bin2hex(random_bytes(16)); // Generate a unique transaction reference
         $pay = hdev_payment::pay($payment_method, $amount, $transaction_ref, '');
@@ -105,3 +151,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         ]);
     }
 }
+?>
