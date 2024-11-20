@@ -212,8 +212,8 @@ $total_notifications = 5;
 
         <div class="mb-3">
             <label for="number_place" class="form-label">Number of Place</label>
-            <select class="form-select" id="number_place" name="number_place" required>
-                <?php for ($i = 1; $i <= 10; $i++): ?>
+            <select class="form-select form-control" id="number_place" name="number_place" required>
+                <?php for ($i = 1; $i <= 30; $i++): ?>
                     <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
                 <?php endfor; ?>
             </select>
