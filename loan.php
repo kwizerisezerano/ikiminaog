@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // Fetch user details
-$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image,idno,behalf_name,behalf_phone_number ,idno_picture,otp_behalf_used FROM users WHERE id = :id");
+$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image, idno, behalf_name, behalf_phone_number, idno_picture, otp_behalf_used FROM users WHERE id = :id");
 $stmt->bindParam(':id', $user_id);
 $stmt->execute();
 
@@ -22,36 +22,30 @@ if (!$user) {
     exit();
 }
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
+$user_phone = htmlspecialchars($user['phone_number']);  // Added phone number from session
+
 // Get tontine ID from the URL
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Fetch tontine details
-$stmt = $pdo->prepare("SELECT tontine_name, interest,payment_frequency ,frequent_payment_date,frequent_payment_day FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, interest, payment_frequency, frequent_payment_date, frequent_payment_day, late_contribution_penalty FROM tontine WHERE id = :id");
 $stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
 $stmt->execute();
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
-$interest=$tontine['interest'];
-
-
 
 // Check if tontine exists
 if (!$tontine) {
     die("Tontine not found.");
 }
-
-
+$interest = $tontine['interest'];  // Tontine's interest rate
+$payment_frequency = $tontine['payment_frequency'];  // Monthly or Weekly
+$frequent_payment_date = $tontine['frequent_payment_date'];  // Payment date or start date
+$frequent_payment_day = $tontine['frequent_payment_day'];  // Payment day if weekly
+$late_contribution_penalty = $tontine['late_contribution_penalty'];  // Penalty for late contribution
 
 // Notification count
 $total_notifications = 5;
 
- // Prepare and execute the query
-        $stmt = $pdo->prepare("SELECT amount FROM tontine_join_requests WHERE tontine_id = :tontine_id AND user_id = :user_id");
-        $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
-        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->execute();
-
-        // Fetch the result
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,16 +53,12 @@ $total_notifications = 5;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join <?php echo htmlspecialchars($tontine['tontine_name']); ?> - Ikimina MIS</title>
-  <!-- Font Awesome (only one version needed) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<!-- jQuery (for Bootstrap 4/5) -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Bootstrap 4 Bundle (you can remove this if you only want to use Bootstrap 5) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-     <style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
         .notification-badge {
             position: absolute;
             top: -5px;
@@ -79,20 +69,25 @@ $total_notifications = 5;
             padding: 2px 5px;
             font-size: 0.80rem;
         }
-        /* Custom CSS */
         body {
             background-color: #d6dce5;
             font-family: Arial, sans-serif;
             margin: 0;
+           
         }
-        .form-container {
+       
+        .form-container { font-size: 0.7rem;
             background-color: #fff;
-            padding: 30px;
+            padding: 5px 30px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
-            margin: 60px auto 0; /* Adds space below the navbar */
+            margin: 60px auto 0;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 0.2rem;
         }
         .form-title {
             color: #007bff;
@@ -114,13 +109,10 @@ $total_notifications = 5;
         .btn-submit:hover {
             background-color: #0056b3;
         }
-        .form-check-label {
-            font-size: 0.9rem;
-        }
     </style>
 </head>
 <body>
-     <!-- Navbar -->
+       <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
@@ -204,126 +196,95 @@ $total_notifications = 5;
     </div>
 </nav>
 
-<div class="form-container mt-3">
-    <h5 class="form-title">Welcome to  <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
-    
-    <form id="joinForm" method="POST" enctype="multipart/form-data">
-        <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
-        <input type="hidden" id="total_contributions" value="<?php echo $total_contributions; ?>">
 
+<div class="form-container mt-1">
+    <h5 class="form-title" style="margin-bottom: 1px;">Welcome to <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
+
+    <form id="loanForm" method="POST" action="process_loan.php">
+        <!-- Hidden Fields -->
+        <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
+        <input type="hidden" id="interest_rate" value="<?php echo $interest; ?>">
 
         <!-- Loan Amount -->
-        <div class="mb-3">
+        <div class="mb-1">
             <label for="amount" class="form-label">Loan Amount</label>
-            <input type="number" class="form-control" id="amount" name="amount" min="500" max="100000" >
-           
+            <input type="number" class="form-control" id="amount" name="amount"  required>
         </div>
 
-      
-        <div class="mb-3">
-            <label for="interest" class="form-label">Interest rate </label>
-            <input type="text" class="form-control" id="interest" name="interest-rate" value="">
+        <!-- Interest Rate (from Tontine) -->
+        <div class="mb-1">
+            <label for="interest" class="form-label">Interest Rate</label>
+            <input type="text" class="form-control" id="interest" name="interest-rate" value="<?php echo $interest; ?>" readonly>
         </div>
-      
-        <div class="mb-3">
-            <label for="interest" class="form-label">Interest amount </label>
-            <input type="text" class="form-control" id="interest" name="interest-amount" value="">
+
+        <!-- Interest Amount -->
+        <div class="mb-1">
+            <label for="interest_amount" class="form-label">Interest Amount</label>
+            <input type="text" class="form-control" id="interest_amount" name="interest_amount" value="" readonly>
         </div>
-        
-      
-        <div class="mb-3">
+
+        <!-- Total Amount (Loan + Interest) -->
+        <div class="mb-1">
             <label for="total_amount" class="form-label">Total Amount</label>
-            <input type="text" class="form-control" id="total_amount" name="total_amount"  >
+            <input type="text" class="form-control" id="total_amount" name="total_amount" value="" readonly>
         </div>
 
-     
+        <!-- Payment Frequency -->
+        <div class="mb-1">
+            <label for="payment_frequency" class="form-label">Payment Frequency</label>
+            <input type="text" class="form-control" id="payment_frequency" name="payment_frequency" value="<?php echo htmlspecialchars($payment_frequency); ?>" readonly>
+        </div>
+
+        <!-- Frequent Payment Date (only for Monthly payments) -->
+        <?php if ($payment_frequency == 'Monthly') : ?>
+            <div class="mb-3">
+                <label for="frequent_payment_date" class="form-label">Frequent Payment Date</label>
+                <input type="text" class="form-control" id="frequent_payment_date" name="frequent_payment_date" value="<?php echo htmlspecialchars($frequent_payment_date); ?>" readonly>
+            </div>
+        <?php endif; ?>
+
+        <!-- User Phone Number -->
+        <div class="mb-2">
+            <label for="phone_number" class="form-label">Your Phone Number</label>
+            <input type="text" class="form-control" id="phone_number" name="phone_number" value="<?php echo $user_phone; ?>" readonly>
+        </div>
+
         <!-- Submit Button -->
-        <button type="submit" class="btn btn-submit" id="submitBtn">Submit Join Request</button>
+        <button type="submit" class="btn btn-submit mb-1" id="submitBtn">Send Loan Request</button>
     </form>
 </div>
 
 
-<script>
-   // Update loan range and total amount based on loan type
-    function updateLoanRange() {
-        const loanType = document.getElementById('loan_type').value;
-        const amountField = document.getElementById('amount');
-        const amountRange = document.getElementById('amountRange');
-        const totalAmountField = document.getElementById('total_amount');
-        let min = 0;
-        let max = 0;
+    <script>
+    // Initialize the loan calculations on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        const amountInput = document.getElementById('amount');
+        const interestRate = parseFloat(document.getElementById('interest_rate').value);
+        const interestAmountInput = document.getElementById('interest_amount');
+        const totalAmountInput = document.getElementById('total_amount');
+        const paymentFrequency = '<?php echo $payment_frequency; ?>'; // Payment frequency from PHP
 
-        // Set loan amount range and total amount
-        switch (loanType) {
-            case 'small':
-                min = 500;
-                max = 10000;
-                amountRange.textContent = 'Amount Range: 500 - 10,000 (Small)';
-                break;
-            case 'medium':
-                min = 10000;
-                max = 50000;
-                amountRange.textContent = 'Amount Range: 10,000 - 50,000 (Medium)';
-                break;
-            case 'large':
-                min = 50000;
-                max = 100000;
-                amountRange.textContent = 'Amount Range: 50,000 - 100,000 (Large)';
-                break;
+        // Function to calculate the interest amount and total amount
+        function calculateAmounts() {
+            const amount = parseFloat(amountInput.value) || 0;
+            const annualInterestAmount = (amount * interestRate) / 100; // Calculate annual interest
+            const totalAmount = amount + annualInterestAmount; // Total amount = loan amount + interest
+
+            // Display the annual interest amount and total amount
+            interestAmountInput.value = annualInterestAmount.toFixed(2); // Display interest amount (annual)
+            totalAmountInput.value = totalAmount.toFixed(2); // Display total amount (loan + interest)
+
+            // If payment frequency is Weekly or Monthly, calculate payment schedule
+         
         }
 
-      
-    }
+        // Add event listener to recalculate amounts when loan amount changes
+        amountInput.addEventListener('input', calculateAmounts);
 
-    // Initialize loan range on page load
-    document.addEventListener('DOMContentLoaded', updateLoanRange);
-
-  $('#joinForm').on('submit', function(e) {
-    e.preventDefault();
-
-    $.ajax({
-        url: 'submit_contribution.php',
-        type: 'POST',
-        data: $(this).serialize(),
-        success: function(response) {
-            const res = JSON.parse(response);
-            Swal.fire({
-                title: res.title,
-                text: res.message,
-                icon: res.status === 'success' ? 'success' : 'error',
-            }).then(() => {
-                if (res.status === 'success' && res.redirect) {
-                    window.location.href = res.redirect;
-                }
-            });
-        },
-        error: function() {
-            Swal.fire({
-                title: 'Server Error',
-                text: 'Please try again later.',
-                icon: 'error',
-            });
-        }
+        // Initial calculation
+        calculateAmounts();
     });
-});
-
-
-
-    function confirmLogout() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'Do you want to log out?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, log out',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = 'logout.php';
-            }
-        });
-    }
-
 </script>
+
 </body>
 </html>

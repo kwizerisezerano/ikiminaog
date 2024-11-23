@@ -22,6 +22,7 @@ if (!$user) {
     exit();
 }
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
+
 // Get tontine ID from the URL
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -124,7 +125,6 @@ $total_notifications = 5;
         <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
-       
         <ul class="navbar-nav mr-auto">
             <li class="nav-item">
                 <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
@@ -136,11 +136,9 @@ $total_notifications = 5;
                 <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
                         <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
                         <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                     
                         <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
                     </div>
             </li>
-          
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Contributions
@@ -208,8 +206,6 @@ $total_notifications = 5;
     <form id="joinForm" method="POST">
     <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
 
-    <!-- Existing form fields -->
-
     <!-- Interest -->
     <div class="mb-3">
         <label for="interest" class="form-label">Interest</label>
@@ -218,12 +214,11 @@ $total_notifications = 5;
 
     <!-- Payment Frequency -->
     <div class="mb-3">
-        <label for="payment_frequency" class="form-label">Payment Frequency</label>
-        <select class="form-control" id="payment_frequency" name="payment_frequency">
-            <option value="Monthly">Monthly</option>
-            <option value="Weekly">Weekly</option>
-        </select>
-    </div>
+    <label for="payment_frequency" class="form-label">Payment Frequency</label>
+    <select class="form-control" id="payment_frequency" name="payment_frequency" readonly>
+        <option value="Monthly">Monthly</option>
+    </select>
+</div>
 
     <!-- Frequent Payment Date (only if Monthly) -->
     <div class="mb-3" id="frequent_payment_date_div">
@@ -231,39 +226,13 @@ $total_notifications = 5;
         <input type="date" class="form-control" id="frequent_payment_date" name="frequent_payment_date">
     </div>
 
-    <!-- Frequent Payment Day (only if Weekly) -->
-    <div class="mb-3" id="frequent_payment_day_div">
-        <label for="frequent_payment_day" class="form-label">Frequent Payment Day</label>
-        <select class="form-control" id="frequent_payment_day" name="frequent_payment_day">
-            <option value="Monday">Monday</option>
-            <option value="Tuesday">Tuesday</option>
-            <option value="Wednesday">Wednesday</option>
-            <option value="Thursday">Thursday</option>
-            <option value="Friday">Friday</option>
-            <option value="Saturday">Saturday</option>
-            <option value="Sunday">Sunday</option>
-        </select>
-    </div>
-
-    <button type="submit" class="btn btn-submit">Submit Join Request</button>
+    <button type="submit" class="btn btn-submit">Update Loan related data</button>
 </form>
 </div>
 
 <script>
-// Show or hide fields based on payment frequency
-    $('#payment_frequency').change(function() {
-        var frequency = $(this).val();
-        if (frequency == 'Monthly') {
-            $('#frequent_payment_date_div').show();
-            $('#frequent_payment_day_div').hide();
-        } else if (frequency == 'Weekly') {
-            $('#frequent_payment_date_div').hide();
-            $('#frequent_payment_day_div').show();
-        }
-    }).trigger('change'); // Trigger the change event to show/hide initially based on the current value
-
-
-    $('#joinForm').on('submit', function(e) {
+// Remove all the logic related to weekly and keep the Monthly logic only
+$('#joinForm').on('submit', function(e) {
     e.preventDefault();
 
     var interest = $('#interest').val();
@@ -283,8 +252,8 @@ $total_notifications = 5;
                 text: res.message,
                 icon: res.status === 'success' ? 'success' : 'error',
             }).then(() => {
-                if (res.status === 'success' && res.redirect_to) {  // Change res.redirect to res.redirect_to
-                    window.location.href = res.redirect_to;  // Use res.redirect_to instead of res.redirect
+                if (res.status === 'success' && res.redirect_to) {
+                    window.location.href = res.redirect_to;
                 }
             });
         },
@@ -298,23 +267,20 @@ $total_notifications = 5;
     });
 });
 
-
-
-    function confirmLogout() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'Do you want to log out?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, log out',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = 'logout.php';
-            }
-        });
-    }
-
+function confirmLogout() {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'Do you want to log out?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, log out',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = 'logout.php';
+        }
+    });
+}
 </script>
 </body>
 </html>

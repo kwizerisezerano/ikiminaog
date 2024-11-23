@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 11, 2025 at 08:06 AM
+-- Generation Time: Nov 23, 2024 at 09:08 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -33,19 +33,65 @@ CREATE TABLE `contributions` (
   `tontine_id` int(11) DEFAULT NULL,
   `amount` decimal(10,2) DEFAULT NULL,
   `payment_method` varchar(100) DEFAULT NULL,
-  `contribution_date` datetime DEFAULT current_timestamp(),
-  `payment_status` enum('Pending','Failure','Approved') DEFAULT 'Pending',
-  `transaction_ref` varchar(255) NOT NULL
+  `contribution_date` date DEFAULT curdate(),
+  `transaction_ref` varchar(255) NOT NULL,
+  `payment_status` enum('Approved','Pending','Failure') DEFAULT 'Pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `contributions`
 --
 
-INSERT INTO `contributions` (`id`, `user_id`, `tontine_id`, `amount`, `payment_method`, `contribution_date`, `payment_status`, `transaction_ref`) VALUES
-(44, 98, 50, 5.00, '0790989830', '2024-11-11 09:03:17', 'Pending', '7f44996c8971d40256fa559360855716'),
-(45, 98, 50, 5.00, '0790989830', '2024-11-11 09:03:37', 'Pending', '764e1311544c10c012ad25d64ffaec40'),
-(46, 98, 50, 5.00, '0790989830', '2025-01-11 09:04:24', 'Pending', 'e7abfde2b2134c9b101fc63d8ddd0cb3');
+INSERT INTO `contributions` (`id`, `user_id`, `tontine_id`, `amount`, `payment_method`, `contribution_date`, `transaction_ref`, `payment_status`) VALUES
+(127, 98, 59, 8.00, '0790989830', '2024-11-19', '84dbcaa704e780e5d233a988d575e71f', 'Pending'),
+(128, 98, 59, 8.00, '0790989830', '2025-01-19', 'e47359fedb42a2b692145ec949e33132', 'Pending'),
+(129, 98, 60, 9.00, '0790989830', '2024-11-27', '71346c1e51c836bbfb71b5bf8505ba47', 'Failure'),
+(130, 98, 60, 9.00, '0790989830', '2024-12-04', 'e326b1813333e0bf47ff211a08ea761e', 'Failure'),
+(131, 98, 60, 9.00, '0790989830', '2024-12-11', '9c9ebeadf0c08a685068702662b841c1', 'Failure'),
+(132, 98, 60, 9.00, '0790989830', '2024-12-18', 'a1d80ff26b582116023806d19cd61b50', 'Failure'),
+(133, 98, 58, 9.00, '0790989830', '2024-12-18', '33fea0e609ef4d2e32cd20fc454a22d4', 'Failure'),
+(134, 98, 58, 9.00, '0790989830', '2024-12-19', '02ee62e27ba76975da62c43db02c5c36', 'Failure'),
+(135, 98, 58, 9.00, '0790989830', '2024-12-26', '4a71307082870ca0345aff63bb0c13bd', 'Failure'),
+(136, 98, 58, 9.00, '0790989830', '2024-12-27', 'cb9580205734484c41b801099518d1ad', 'Failure'),
+(137, 98, 58, 9.00, '0790989830', '2024-12-28', '076ab61fb11260a3be3286ab182c84a2', 'Failure'),
+(138, 98, 50, 5.00, '0790989830', '2024-11-11', 'c380e5c6ace07b4466ee2062d6028d39', 'Failure'),
+(139, 98, 50, 5.00, '0790989830', '2024-12-11', '218e53a0f90b25b1adcb0ba3acc44679', ''),
+(140, 98, 60, 9.00, '0790989830', '2025-01-01', 'e4805363aed0b2700236c8fdf82e1968', ''),
+(141, 98, 60, 9.00, '0790989830', '2025-01-08', '472853b414d983fa3b457aca9d6564e1', 'Pending'),
+(142, 98, 58, 9.00, '0790989830', '2024-11-23', 'e331e14dc8558b6bc33b4398100ac4ec', 'Pending');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_requests`
+--
+
+CREATE TABLE `loan_requests` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `tontine_id` int(11) NOT NULL,
+  `loan_amount` decimal(10,2) NOT NULL,
+  `interest_rate` decimal(5,2) NOT NULL,
+  `interest_amount` decimal(10,2) NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `payment_frequency` varchar(50) NOT NULL,
+  `payment_date` date DEFAULT NULL,
+  `phone_number` varchar(20) NOT NULL,
+  `status` enum('Pending','Approved','Rejected','Disbursed') DEFAULT 'Pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `loan_requests`
+--
+
+INSERT INTO `loan_requests` (`id`, `user_id`, `tontine_id`, `loan_amount`, `interest_rate`, `interest_amount`, `total_amount`, `payment_frequency`, `payment_date`, `phone_number`, `status`, `created_at`, `updated_at`) VALUES
+(3, 98, 59, 5000.00, 10.00, 500.00, 5500.00, '', NULL, '0790989830', 'Pending', '2024-11-23 19:05:09', '2024-11-23 19:05:09'),
+(4, 98, 59, 800.00, 10.00, 80.00, 880.00, '', NULL, '0790989830', 'Pending', '2024-11-23 19:08:03', '2024-11-23 19:08:03'),
+(5, 98, 59, 900.00, 10.00, 90.00, 990.00, 'Not specified', NULL, '0790989830', 'Pending', '2024-11-23 19:22:11', '2024-11-23 19:22:11'),
+(6, 98, 59, 700.00, 10.00, 70.00, 770.00, 'Monthly', '2024-11-29', '0790989830', 'Pending', '2024-11-23 19:23:58', '2024-11-23 19:23:58'),
+(7, 98, 59, 900.00, 10.00, 90.00, 990.00, 'Monthly', '2024-11-29', '0790989830', 'Pending', '2024-11-23 19:27:14', '2024-11-23 19:27:14');
 
 -- --------------------------------------------------------
 
@@ -59,16 +105,76 @@ CREATE TABLE `missed_contributions` (
   `tontine_id` int(11) NOT NULL,
   `missed_amount` decimal(10,2) NOT NULL,
   `missed_date` date NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('Paid','Unpaid') DEFAULT 'Unpaid'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `missed_contributions`
 --
 
-INSERT INTO `missed_contributions` (`id`, `user_id`, `tontine_id`, `missed_amount`, `missed_date`, `created_at`) VALUES
-(286, 98, 50, 5.00, '2024-11-11', '2025-01-11 07:04:21'),
-(287, 98, 50, 5.00, '2024-12-11', '2025-01-11 07:04:21');
+INSERT INTO `missed_contributions` (`id`, `user_id`, `tontine_id`, `missed_amount`, `missed_date`, `created_at`, `status`) VALUES
+(508, 98, 59, 8.00, '2024-12-19', '2025-01-19 09:46:58', 'Paid'),
+(645, 98, 58, 6.00, '2024-11-23', '2024-12-28 10:15:45', 'Unpaid'),
+(646, 98, 58, 6.00, '2024-11-24', '2024-12-28 10:15:45', 'Unpaid'),
+(647, 98, 58, 6.00, '2024-11-25', '2024-12-28 10:15:45', 'Unpaid'),
+(648, 98, 58, 6.00, '2024-11-26', '2024-12-28 10:15:45', 'Unpaid'),
+(649, 98, 58, 6.00, '2024-11-27', '2024-12-28 10:15:45', 'Unpaid'),
+(650, 98, 58, 6.00, '2024-11-28', '2024-12-28 10:15:45', 'Unpaid'),
+(651, 98, 58, 6.00, '2024-11-29', '2024-12-28 10:15:45', 'Unpaid'),
+(652, 98, 58, 6.00, '2024-11-30', '2024-12-28 10:15:45', 'Unpaid'),
+(653, 98, 58, 6.00, '2024-12-01', '2024-12-28 10:15:45', 'Unpaid'),
+(654, 98, 58, 6.00, '2024-12-02', '2024-12-28 10:15:45', 'Unpaid'),
+(655, 98, 58, 6.00, '2024-12-03', '2024-12-28 10:15:45', 'Unpaid'),
+(656, 98, 58, 6.00, '2024-12-04', '2024-12-28 10:15:45', 'Unpaid'),
+(657, 98, 58, 6.00, '2024-12-05', '2024-12-28 10:15:45', 'Unpaid'),
+(658, 98, 58, 6.00, '2024-12-06', '2024-12-28 10:15:45', 'Unpaid'),
+(659, 98, 58, 6.00, '2024-12-07', '2024-12-28 10:15:45', 'Unpaid'),
+(660, 98, 58, 6.00, '2024-12-08', '2024-12-28 10:15:45', 'Unpaid'),
+(661, 98, 58, 6.00, '2024-12-09', '2024-12-28 10:15:45', 'Unpaid'),
+(662, 98, 58, 6.00, '2024-12-10', '2024-12-28 10:15:45', 'Unpaid'),
+(663, 98, 58, 6.00, '2024-12-11', '2024-12-28 10:15:45', 'Unpaid'),
+(664, 98, 58, 6.00, '2024-12-12', '2024-12-28 10:15:45', 'Unpaid'),
+(665, 98, 58, 6.00, '2024-12-13', '2024-12-28 10:15:45', 'Unpaid'),
+(666, 98, 58, 6.00, '2024-12-14', '2024-12-28 10:15:45', 'Unpaid'),
+(667, 98, 58, 6.00, '2024-12-15', '2024-12-28 10:15:45', 'Unpaid'),
+(668, 98, 58, 6.00, '2024-12-16', '2024-12-28 10:15:45', 'Unpaid'),
+(669, 98, 58, 6.00, '2024-12-17', '2024-12-28 10:15:45', 'Unpaid'),
+(670, 98, 58, 6.00, '2024-12-20', '2024-12-28 10:15:45', 'Unpaid'),
+(671, 98, 58, 6.00, '2024-12-21', '2024-12-28 10:15:45', 'Unpaid'),
+(672, 98, 58, 6.00, '2024-12-22', '2024-12-28 10:15:45', 'Unpaid'),
+(673, 98, 58, 6.00, '2024-12-23', '2024-12-28 10:15:45', 'Unpaid'),
+(674, 98, 58, 6.00, '2024-12-24', '2024-12-28 10:15:45', 'Unpaid'),
+(679, 98, 60, 9.00, '2024-12-25', '2025-01-08 15:41:17', 'Unpaid'),
+(680, 98, 58, 6.00, '2024-11-19', '2024-11-23 05:18:33', 'Unpaid'),
+(681, 98, 58, 6.00, '2024-11-20', '2024-11-23 05:18:33', 'Unpaid'),
+(682, 98, 58, 6.00, '2024-11-21', '2024-11-23 05:18:33', 'Unpaid'),
+(683, 98, 58, 6.00, '2024-11-22', '2024-11-23 05:18:33', 'Unpaid');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `missed_contribution_payment`
+--
+
+CREATE TABLE `missed_contribution_payment` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `tontine_id` int(11) NOT NULL,
+  `missed_id` int(11) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `phone_number` varchar(20) NOT NULL,
+  `transaction_ref` varchar(255) NOT NULL,
+  `payment_status` enum('Pending','Approved','Failure') NOT NULL DEFAULT 'Pending',
+  `payment_date` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `missed_contribution_payment`
+--
+
+INSERT INTO `missed_contribution_payment` (`id`, `user_id`, `tontine_id`, `missed_id`, `amount`, `phone_number`, `transaction_ref`, `payment_status`, `payment_date`) VALUES
+(15, 98, 59, 508, 8.00, '0790989830', '9c5597c4d6b284d6909e5e3e9fa8b148', 'Approved', '2024-11-23 10:58:59');
 
 -- --------------------------------------------------------
 
@@ -112,16 +218,216 @@ CREATE TABLE `penalties` (
   `penalty_amount` decimal(10,2) NOT NULL,
   `infraction_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `reason` varchar(255) NOT NULL,
-  `missed_contribution_date` date DEFAULT NULL
+  `missed_contribution_date` date DEFAULT NULL,
+  `status` enum('Paid','Unpaid') DEFAULT 'Unpaid'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `penalties`
 --
 
-INSERT INTO `penalties` (`id`, `user_id`, `tontine_id`, `penalty_amount`, `infraction_date`, `reason`, `missed_contribution_date`) VALUES
-(293, 98, 50, 10.00, '2025-01-11 07:04:21', 'Missed contributions', '2024-11-11'),
-(294, 98, 50, 10.00, '2025-01-11 07:04:21', 'Missed contributions', '2024-12-11');
+INSERT INTO `penalties` (`id`, `user_id`, `tontine_id`, `penalty_amount`, `infraction_date`, `reason`, `missed_contribution_date`, `status`) VALUES
+(541, 98, 59, 5.00, '2025-01-19 09:46:58', 'Missed contributions', '2024-12-19', 'Paid'),
+(542, 98, 60, 0.00, '2024-11-27 10:04:38', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(543, 98, 60, 0.00, '2024-12-04 10:06:38', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(544, 98, 60, 0.00, '2024-12-11 10:07:04', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(545, 98, 60, 0.00, '2024-12-18 10:07:29', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(546, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-19', 'Unpaid'),
+(547, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(548, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-21', 'Unpaid'),
+(549, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-22', 'Unpaid'),
+(550, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-23', 'Unpaid'),
+(551, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-24', 'Unpaid'),
+(552, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-25', 'Unpaid'),
+(553, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-26', 'Unpaid'),
+(554, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-27', 'Unpaid'),
+(555, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-28', 'Unpaid'),
+(556, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-29', 'Unpaid'),
+(557, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-11-30', 'Unpaid'),
+(558, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-01', 'Unpaid'),
+(559, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-02', 'Unpaid'),
+(560, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-03', 'Unpaid'),
+(561, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-04', 'Unpaid'),
+(562, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-05', 'Unpaid'),
+(563, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-06', 'Unpaid'),
+(564, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-07', 'Unpaid'),
+(565, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-08', 'Unpaid'),
+(566, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-09', 'Unpaid'),
+(567, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-10', 'Unpaid'),
+(568, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-11', 'Unpaid'),
+(569, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-12', 'Unpaid'),
+(570, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-13', 'Unpaid'),
+(571, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-14', 'Unpaid'),
+(572, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-15', 'Unpaid'),
+(573, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-16', 'Unpaid'),
+(574, 98, 58, 0.00, '2024-12-18 10:11:58', 'Missed contributions', '2024-12-17', 'Unpaid'),
+(575, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-19', 'Unpaid'),
+(576, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(577, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-21', 'Unpaid'),
+(578, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-22', 'Unpaid'),
+(579, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-23', 'Unpaid'),
+(580, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-24', 'Unpaid'),
+(581, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-25', 'Unpaid'),
+(582, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-26', 'Unpaid'),
+(583, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-27', 'Unpaid'),
+(584, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-28', 'Unpaid'),
+(585, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-29', 'Unpaid'),
+(586, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-11-30', 'Unpaid'),
+(587, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-01', 'Unpaid'),
+(588, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-02', 'Unpaid'),
+(589, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-03', 'Unpaid'),
+(590, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-04', 'Unpaid'),
+(591, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-05', 'Unpaid'),
+(592, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-06', 'Unpaid'),
+(593, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-07', 'Unpaid'),
+(594, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-08', 'Unpaid'),
+(595, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-09', 'Unpaid'),
+(596, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-10', 'Unpaid'),
+(597, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-11', 'Unpaid'),
+(598, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-12', 'Unpaid'),
+(599, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-13', 'Unpaid'),
+(600, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-14', 'Unpaid'),
+(601, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-15', 'Unpaid'),
+(602, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-16', 'Unpaid'),
+(603, 98, 58, 0.00, '2024-12-19 10:12:37', 'Missed contributions', '2024-12-17', 'Unpaid'),
+(604, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-19', 'Unpaid'),
+(605, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(606, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-21', 'Unpaid'),
+(607, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-22', 'Unpaid'),
+(608, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-23', 'Unpaid'),
+(609, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-24', 'Unpaid'),
+(610, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-25', 'Unpaid'),
+(611, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-26', 'Unpaid'),
+(612, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-27', 'Unpaid'),
+(613, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-28', 'Unpaid'),
+(614, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-29', 'Unpaid'),
+(615, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-11-30', 'Unpaid'),
+(616, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-01', 'Unpaid'),
+(617, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-02', 'Unpaid'),
+(618, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-03', 'Unpaid'),
+(619, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-04', 'Unpaid'),
+(620, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-05', 'Unpaid'),
+(621, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-06', 'Unpaid'),
+(622, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-07', 'Unpaid'),
+(623, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-08', 'Unpaid'),
+(624, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-09', 'Unpaid'),
+(625, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-10', 'Unpaid'),
+(626, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-11', 'Unpaid'),
+(627, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-12', 'Unpaid'),
+(628, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-13', 'Unpaid'),
+(629, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-14', 'Unpaid'),
+(630, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-15', 'Unpaid'),
+(631, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-16', 'Unpaid'),
+(632, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-17', 'Unpaid'),
+(633, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-20', 'Unpaid'),
+(634, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-21', 'Unpaid'),
+(635, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-22', 'Unpaid'),
+(636, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-23', 'Unpaid'),
+(637, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-24', 'Unpaid'),
+(638, 98, 58, 0.00, '2024-12-26 10:13:34', 'Missed contributions', '2024-12-25', 'Unpaid'),
+(639, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-19', 'Unpaid'),
+(640, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(641, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-21', 'Unpaid'),
+(642, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-22', 'Unpaid'),
+(643, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-23', 'Unpaid'),
+(644, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-24', 'Unpaid'),
+(645, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-25', 'Unpaid'),
+(646, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-26', 'Unpaid'),
+(647, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-27', 'Unpaid'),
+(648, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-28', 'Unpaid'),
+(649, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-29', 'Unpaid'),
+(650, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-11-30', 'Unpaid'),
+(651, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-01', 'Unpaid'),
+(652, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-02', 'Unpaid'),
+(653, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-03', 'Unpaid'),
+(654, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-04', 'Unpaid'),
+(655, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-05', 'Unpaid'),
+(656, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-06', 'Unpaid'),
+(657, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-07', 'Unpaid'),
+(658, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-08', 'Unpaid'),
+(659, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-09', 'Unpaid'),
+(660, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-10', 'Unpaid'),
+(661, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-11', 'Unpaid'),
+(662, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-12', 'Unpaid'),
+(663, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-13', 'Unpaid'),
+(664, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-14', 'Unpaid'),
+(665, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-15', 'Unpaid'),
+(666, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-16', 'Unpaid'),
+(667, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-17', 'Unpaid'),
+(668, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-20', 'Unpaid'),
+(669, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-21', 'Unpaid'),
+(670, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-22', 'Unpaid'),
+(671, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-23', 'Unpaid'),
+(672, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-24', 'Unpaid'),
+(673, 98, 58, 0.00, '2024-12-27 10:15:00', 'Missed contributions', '2024-12-25', 'Unpaid'),
+(674, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-19', 'Unpaid'),
+(675, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(676, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-21', 'Unpaid'),
+(677, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-22', 'Unpaid'),
+(678, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-23', 'Unpaid'),
+(679, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-24', 'Unpaid'),
+(680, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-25', 'Unpaid'),
+(681, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-26', 'Unpaid'),
+(682, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-27', 'Unpaid'),
+(683, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-28', 'Unpaid'),
+(684, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-29', 'Unpaid'),
+(685, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-11-30', 'Unpaid'),
+(686, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-01', 'Unpaid'),
+(687, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-02', 'Unpaid'),
+(688, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-03', 'Unpaid'),
+(689, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-04', 'Unpaid'),
+(690, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-05', 'Unpaid'),
+(691, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-06', 'Unpaid'),
+(692, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-07', 'Unpaid'),
+(693, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-08', 'Unpaid'),
+(694, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-09', 'Unpaid'),
+(695, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-10', 'Unpaid'),
+(696, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-11', 'Unpaid'),
+(697, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-12', 'Unpaid'),
+(698, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-13', 'Unpaid'),
+(699, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-14', 'Unpaid'),
+(700, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-15', 'Unpaid'),
+(701, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-16', 'Unpaid'),
+(702, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-17', 'Unpaid'),
+(703, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-20', 'Unpaid'),
+(704, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-21', 'Unpaid'),
+(705, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-22', 'Unpaid'),
+(706, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-23', 'Unpaid'),
+(707, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-24', 'Unpaid'),
+(708, 98, 58, 0.00, '2024-12-28 10:15:45', 'Missed contributions', '2024-12-25', 'Unpaid'),
+(709, 98, 60, 0.00, '2025-01-01 15:31:25', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(710, 98, 60, 0.00, '2025-01-01 15:31:25', 'Missed contributions', '2024-12-25', 'Unpaid'),
+(711, 98, 60, 0.00, '2025-01-08 15:41:17', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(712, 98, 60, 0.00, '2025-01-08 15:41:17', 'Missed contributions', '2024-12-25', 'Unpaid'),
+(713, 98, 58, 0.00, '2024-11-23 05:18:33', 'Missed contributions', '2024-11-19', 'Unpaid'),
+(714, 98, 58, 0.00, '2024-11-23 05:18:33', 'Missed contributions', '2024-11-20', 'Unpaid'),
+(715, 98, 58, 0.00, '2024-11-23 05:18:33', 'Missed contributions', '2024-11-21', 'Unpaid'),
+(716, 98, 58, 0.00, '2024-11-23 05:18:33', 'Missed contributions', '2024-11-22', 'Unpaid');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `penalty_payment`
+--
+
+CREATE TABLE `penalty_payment` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `tontine_id` int(11) NOT NULL,
+  `penalty_id` int(11) NOT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `phone_number` varchar(15) NOT NULL,
+  `payment_status` enum('Pending','Failure','Approved') NOT NULL,
+  `transaction_ref` varchar(32) NOT NULL,
+  `payment_date` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `penalty_payment`
+--
+
+INSERT INTO `penalty_payment` (`id`, `user_id`, `tontine_id`, `penalty_id`, `amount`, `phone_number`, `payment_status`, `transaction_ref`, `payment_date`) VALUES
+(10, 98, 59, 541, 5.00, '0790989830', 'Approved', '9fbf320e03d881558868b003cb215f28', '2024-11-23 15:22:26');
 
 -- --------------------------------------------------------
 
@@ -170,9 +476,9 @@ INSERT INTO `tontine` (`id`, `tontine_name`, `logo`, `join_date`, `province`, `d
 (55, 'pol', 'uploads/673a0ad947564.png', '2024-11-17', 'Kigali', 'Gasabo', 'Rutunga', 3.00, 'Monthly', '17:25:00', '', '2024-11-17', '2024-11-17 15:25:13', 99, 'Admin', '', '', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
 (56, 'ok', 'uploads/673a0badeffb0.png', '2024-11-17', 'East', 'Bugesera', 'Rweru', 7.00, 'Monthly', '17:28:00', '', '2024-11-17', '2024-11-17 15:28:45', 99, 'Admin', '', '', 'Not Justified', '', 9.00, 'Monthly', '2024-11-17', 'Monday', 0),
 (57, 'ppp', 'uploads/673a108e8afc2.png', '2024-11-17', 'East', 'Gatsibo', 'Muhura', 5.00, 'Monthly', '17:49:00', 'Wednesday', '2024-11-17', '2024-11-17 15:49:34', 99, 'Admin', '', '', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(58, 'llllllllllllllllllllllllllllllllll', 'uploads/673cab5b6752c.png', '2024-11-19', 'Kigali', 'Gasabo', 'Remera', 6.00, 'Daily', '17:14:00', '', '0000-00-00', '2024-11-19 15:14:35', 98, 'Admin', '', '', 'Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(59, 'janvier', 'uploads/673cc80750e1d.png', '2024-11-19', 'Kigali', 'Gasabo', 'Rutunga', 800.00, 'Monthly', '19:16:00', 'Friday', '2024-11-19', '2024-11-19 17:16:55', 98, 'Admin', '', '', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(60, 'l', 'uploads/673d97b393f4a.png', '2024-11-20', 'East', 'Rwamagana', 'Rubona', 9.00, 'Weekly', '10:02:00', 'Wednesday', '0000-00-00', '2024-11-20 08:02:59', 98, 'Admin', '', '', 'Justification Request sent', '', 0.00, 'Monthly', NULL, NULL, 0),
+(58, 'nmusafiri', 'uploads/673cab5b6752c.png', '2024-11-19', 'Kigali', 'Gasabo', 'Remera', 6.00, 'Daily', '17:14:00', '', '0000-00-00', '2024-11-19 15:14:35', 98, 'Admin', 'ok', 'ok', 'Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
+(59, 'Winners Tontine', 'uploads/673cc80750e1d.png', '2024-11-19', 'Kigali', 'Gasabo', 'Rutunga', 8.00, 'Monthly', '19:16:00', 'Friday', '2024-11-19', '2024-11-19 17:16:55', 98, 'Admin', 'l', 'l', 'Justified', '', 10.00, 'Monthly', '2024-11-29', 'Monday', 5),
+(60, 'l', 'uploads/673d97b393f4a.png', '2024-11-20', 'East', 'Rwamagana', 'Rubona', 9.00, 'Weekly', '10:02:00', 'Wednesday', '0000-00-00', '2024-11-20 08:02:59', 98, 'Admin', '', '', 'Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
 (61, 'IPRC TUMBA ', 'uploads/673dbc39e23b2.png', '2024-11-20', 'East', 'Gatsibo', 'Rwimbogo', 5.00, 'Monthly', '12:38:00', 'Thursday', '2024-11-20', '2024-11-20 10:38:49', 101, 'Admin', '', '', 'Justified', 'ok', 0.00, 'Monthly', NULL, NULL, 0);
 
 -- --------------------------------------------------------
@@ -201,16 +507,11 @@ CREATE TABLE `tontine_join_requests` (
 --
 
 INSERT INTO `tontine_join_requests` (`id`, `user_id`, `tontine_id`, `number_place`, `amount`, `payment_method`, `terms`, `transaction_ref`, `request_date`, `status`, `reason`, `payment_status`) VALUES
-(20, 98, 51, 5, 5.00, '0790989830', 1, '67371598602a1', '2024-11-15 09:34:19', 'Pending', 'Stay patient your request is being processed', 'Failure'),
-(21, 98, 50, 1, 5.00, '0790989830', 1, '6737239c01c1f', '2024-11-15 10:34:07', 'Permitted', 'ok\n', 'Approved'),
-(22, 98, 32, 1, 600.00, '0790989830', 1, '673723d6842b9', '2024-11-15 10:35:05', 'Pending', 'Stay patient your request is being processed', 'Failure'),
-(23, 97, 51, 5, 5.00, '0782329100', 1, '6738fc539637d', '2024-11-16 20:11:06', 'Pending', 'Stay patient your request is being processed', 'Pending'),
-(24, 99, 57, 1, 5.00, '0786397518', 1, '673a113665285', '2024-11-17 15:52:25', 'Pending', 'Stay patient your request is being processed', 'Failure'),
-(25, 98, 57, 10, 5.00, '0790989830', 1, '673b842936a90', '2024-11-18 18:15:10', 'Pending', 'Stay patient your request is being processed', 'Failure'),
-(26, 98, 56, 1, 7.00, '0790989830', 1, '673ca563aaf24', '2024-11-19 14:49:12', 'Pending', 'Stay patient your request is being processed', 'Failure'),
-(27, 98, 58, 1, 6.00, '0790989830', 1, '673cab8ecdf04', '2024-11-19 15:15:29', 'Permitted', 'Stay patient your request is being processed', 'Failure'),
-(28, 101, 61, 1, 5.00, '0788474304', 1, '673dc0bac3d71', '2024-11-20 10:58:10', 'Permitted', 'OK', 'Failure'),
-(29, 98, 61, 1, 5.00, '0790989830', 1, '673dc543f0149', '2024-11-20 11:17:32', 'Permitted', 'Stay patient your request is being processed', 'Failure');
+(32, 98, 59, 1, 8.00, '0790989830', 1, '', '2025-03-19 18:47:35', 'Permitted', '', 'Pending'),
+(33, 98, 50, 1, 5.00, '0790989830', 1, '', '2025-04-19 09:54:15', 'Permitted', '', 'Pending'),
+(35, 98, 58, 1, 9.00, '0790989830', 1, '', '2024-12-18 10:11:32', 'Permitted', '', 'Pending'),
+(36, 98, 60, 1, 9.00, '0790989830', 1, '6740a23158778', '2024-11-22 15:24:36', 'Permitted', 'Stay patient your request is being processed', 'Failure'),
+(37, 98, 32, 1, 600.00, '0790989830', 1, '677e9cd73ce10', '2025-01-08 15:42:18', 'Pending', 'Stay patient your request is being processed', 'Failure');
 
 -- --------------------------------------------------------
 
@@ -250,7 +551,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `firstname`, `lastname`, `phone_number`, `idno`, `idnotype`, `idno_picture`, `behalf_name`, `behalf_phone_number`, `password`, `image`, `otp`, `verified`, `otp_used`, `otp_login`, `otp_forgot`, `otp_behalf`, `otp_behalf_used`, `terms`, `created_at`, `updated_at`, `role`) VALUES
 (96, 'MUGIRANEZA Laurent', 'love you', '0733282490', '', '', '', '', '', '$2y$10$AnJHXFWTzgw3rrocjapv8eNAhSB/ft0FSfQJFuWHByS21MkzRwoOi', '', 803587, 0, 0, 0, 0, 0, 0, 1, '2024-11-03 20:50:49', '2024-11-03 20:50:49', 'User'),
 (97, 'KWIZERISEZERANO', 'x', '0782329100', '', '', '', '', '', '$2y$10$RR1zg0.KGbWLnNCXf2AUmOd3BWYAwlYA4EobOma/ZC4Z5m.DcEG06', 'uploads/6727e48978b64.jpg', 385747, 1, 1, 138245, 0, 276850, 0, 1, '2024-11-03 20:53:56', '2024-11-16 20:09:22', 'User'),
-(98, 'KWIZERA', 'Isezerano mine', '0790989830', '1200180178531093', 'Rwandan', 'uploads/idno_67360f229e1617.09390862.jpeg', 'MUKAMUGANGA Christine', '0790989830', '$2y$10$YEWdAlYyOAv8Ew5H6ruGheVwvtTdR6I452HZS1.hviiHDSJ53YWUC', 'uploads/673cc8559c2c3.jpg', 195030, 1, 1, 859365, 0, 911154, 1, 1, '2024-11-09 05:39:45', '2024-11-20 11:15:56', 'User'),
+(98, 'KWIZERA', 'Isezerano mine', '0790989830', '1200180178531093', 'Rwandan', 'uploads/idno_67360f229e1617.09390862.jpeg', 'MUKAMUGANGA Christine', '0790989830', '$2y$10$YEWdAlYyOAv8Ew5H6ruGheVwvtTdR6I452HZS1.hviiHDSJ53YWUC', 'uploads/6740a1e87a9ec.jpg', 195030, 1, 1, 694811, 0, 911154, 1, 1, '2024-11-09 05:39:45', '2024-11-23 10:57:36', 'User'),
 (99, 'NIYONSHUTI', 'Immacule mine', '0787714717', '1200180178531097', 'Rwandan', 'uploads/idno_6738f9c6b98995.08355114.jpg', '', '', '$2y$10$YqFTodUnuNDJJNwLD99ueO5/HU00uJhRSma9JuKaT6DV4mH..oxg6', 'uploads/6738fa088abd2.jpg', 407529, 1, 1, 867407, 0, 0, 0, 1, '2024-11-15 14:36:34', '2024-11-20 11:11:37', 'Sector'),
 (100, 'mine', 'bebe', '0790989839', '', '', '', '', '', '$2y$10$30wq5AYA/dONf/phlMCA7.9uutpDZRwnfCETGXI/NEpKLVzgiRHTa', '', 920277, 1, 1, 404837, 0, 0, 0, 1, '2024-11-15 15:00:58', '2024-11-15 15:03:37', 'Court'),
 (101, 'UKOBIZABA', 'Jean Baptiste', '0788474304', '', '', '', '', '', '$2y$10$iC.0qPUY.qujQWvcoCbD4eQSKE.VeFXptCgPOLJikUtvWog8yvrG.', 'uploads/673dbb0e2a61e.jpg', 312026, 1, 1, 697406, 0, 0, 0, 1, '2024-11-20 10:22:27', '2024-11-20 10:33:50', 'User');
@@ -268,12 +569,26 @@ ALTER TABLE `contributions`
   ADD KEY `idx_contributions_user_tontine` (`user_id`,`tontine_id`);
 
 --
+-- Indexes for table `loan_requests`
+--
+ALTER TABLE `loan_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `tontine_id` (`tontine_id`);
+
+--
 -- Indexes for table `missed_contributions`
 --
 ALTER TABLE `missed_contributions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
   ADD KEY `tontine_id` (`tontine_id`);
+
+--
+-- Indexes for table `missed_contribution_payment`
+--
+ALTER TABLE `missed_contribution_payment`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `pdf_files`
@@ -289,6 +604,15 @@ ALTER TABLE `penalties`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
   ADD KEY `tontine_id` (`tontine_id`);
+
+--
+-- Indexes for table `penalty_payment`
+--
+ALTER TABLE `penalty_payment`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `tontine_id` (`tontine_id`),
+  ADD KEY `penalty_id` (`penalty_id`);
 
 --
 -- Indexes for table `tontine`
@@ -321,13 +645,25 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `contributions`
 --
 ALTER TABLE `contributions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
+
+--
+-- AUTO_INCREMENT for table `loan_requests`
+--
+ALTER TABLE `loan_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `missed_contributions`
 --
 ALTER TABLE `missed_contributions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=288;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=684;
+
+--
+-- AUTO_INCREMENT for table `missed_contribution_payment`
+--
+ALTER TABLE `missed_contribution_payment`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `pdf_files`
@@ -339,7 +675,13 @@ ALTER TABLE `pdf_files`
 -- AUTO_INCREMENT for table `penalties`
 --
 ALTER TABLE `penalties`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=295;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=717;
+
+--
+-- AUTO_INCREMENT for table `penalty_payment`
+--
+ALTER TABLE `penalty_payment`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `tontine`
@@ -351,7 +693,7 @@ ALTER TABLE `tontine`
 -- AUTO_INCREMENT for table `tontine_join_requests`
 --
 ALTER TABLE `tontine_join_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -369,6 +711,13 @@ ALTER TABLE `users`
 ALTER TABLE `contributions`
   ADD CONSTRAINT `contributions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `contributions_ibfk_2` FOREIGN KEY (`tontine_id`) REFERENCES `tontine` (`id`);
+
+--
+-- Constraints for table `loan_requests`
+--
+ALTER TABLE `loan_requests`
+  ADD CONSTRAINT `loan_requests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `loan_requests_ibfk_2` FOREIGN KEY (`tontine_id`) REFERENCES `tontine` (`id`);
 
 --
 -- Constraints for table `missed_contributions`
@@ -389,6 +738,14 @@ ALTER TABLE `pdf_files`
 ALTER TABLE `penalties`
   ADD CONSTRAINT `penalties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `penalties_ibfk_2` FOREIGN KEY (`tontine_id`) REFERENCES `tontine` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `penalty_payment`
+--
+ALTER TABLE `penalty_payment`
+  ADD CONSTRAINT `penalty_payment_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `penalty_payment_ibfk_2` FOREIGN KEY (`tontine_id`) REFERENCES `tontine` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `penalty_payment_ibfk_3` FOREIGN KEY (`penalty_id`) REFERENCES `penalties` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `tontine`
