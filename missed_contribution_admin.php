@@ -46,23 +46,21 @@ try {
     ]);
     $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Fetch missed contributions for the logged-in user in the given tontine with pagination
+   // Fetch missed contributions for all users in the given tontine with pagination
 $stmt = $pdo->prepare("
-    SELECT mc.id, mc.missed_date, mc.missed_amount, mc.status, u.phone_number, u.firstname, u.lastname, u.id as user_id
-    FROM missed_contributions mc
-    JOIN users u ON mc.user_id = u.id
+SELECT mc.id, mc.missed_date, mc.missed_amount, mc.status, u.phone_number, u.firstname, u.lastname, u.id as user_id
+FROM missed_contributions mc
+JOIN users u ON mc.user_id = u.id
+WHERE mc.tontine_id = :tontine_id
+AND mc.id IN (
+    SELECT MAX(mc.id) FROM missed_contributions mc 
     WHERE mc.tontine_id = :tontine_id
-    AND mc.user_id = :user_id
-    AND mc.id IN (
-        SELECT MAX(mc.id) FROM missed_contributions mc 
-        WHERE mc.tontine_id = :tontine_id
-        GROUP BY mc.user_id, mc.missed_date
-    )
-    ORDER BY mc.missed_date DESC
-    LIMIT :start, :perPage
+    GROUP BY mc.user_id, mc.missed_date
+)
+ORDER BY mc.missed_date DESC
+LIMIT :start, :perPage
 ");
 $stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
-$stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);  // Filter by logged-in user
 $stmt->bindValue(':start', $start, PDO::PARAM_INT);
 $stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
 $stmt->execute();
@@ -180,7 +178,7 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <th>Date</th>
                     <th>Amount</th>
                     <th>Payment Status</th>
-                    <th>Actions</th>
+                   
                 </tr>
             </thead>
             <tbody>
@@ -192,13 +190,13 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <td><?php echo htmlspecialchars($contribution['missed_amount']); ?></td>
   <td><?php echo htmlspecialchars($contribution['status']); ?></td>
   <td>
-    <form action="payment_page.php" method="GET">
+    <!-- <form action="payment_page.php" method="GET">
         <input type="hidden" name="contribution_id" value="<?php echo $contribution['id']; ?>">
         <input type="hidden" name="user_id" value="<?php echo $contribution['user_id']; ?>"> 
         <input type="hidden" name="amount" value="<?php echo $contribution['missed_amount']; ?>">
         <input type="hidden" name="phone_number" value="<?php echo $contribution['phone_number']; ?>">
         <button type="submit" class="btn btn-primary">Pay Now</button>
-    </form>
+    </form> -->
   </td>
 </tr>
 
@@ -223,7 +221,7 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
     </div>
 
- 
+  
 
     <script>
         function confirmLogout() {

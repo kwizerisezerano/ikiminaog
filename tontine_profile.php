@@ -493,7 +493,7 @@ body {
         <a class="text-white "style="text-decoration:none;" href="contribution_penalty.php?id=<?php echo $id; ?>">Contribution penalty amount</a>
     </button>
       <button type="button" class="btn btn-info btn-sm rounded mt-1">
-        <a class="text-white "style="text-decoration:none;" href="missed_contribution.php?id=<?php echo $id; ?>">Missed contributions</a>
+        <a class="text-white "style="text-decoration:none;" href="missed_contribution_admin.php?id=<?php echo $id; ?>">Missed contributions</a>
     </button>
      <button type="button" class="btn btn-info btn-sm rounded mt-1">
         <a class="text-white "style="text-decoration:none;" href="penalties_contribution.php?id=<?php echo $id; ?>">Penalties for contributions</a>
