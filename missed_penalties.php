@@ -23,55 +23,36 @@ $page = max($page, 1); // Ensure the page number is at least 1
 $start = ($page - 1) * $perPage;
 
 try {
-    // Delete duplicate missed contributions
-    $deleteDuplicatesStmt = $pdo->prepare("
-        DELETE FROM missed_contributions
-        WHERE id NOT IN (
-            SELECT MAX(id) 
-            FROM missed_contributions 
-            GROUP BY user_id, missed_date
-        )
-    ");
-    $deleteDuplicatesStmt->execute();
-
-    // Fetch the total count of distinct missed contributions (one per user and missed date)
-    $countStmt = $pdo->prepare("
-        SELECT COUNT(DISTINCT mc.user_id, mc.missed_date) AS total
-        FROM missed_contributions mc
-        JOIN users u ON mc.user_id = u.id
-        WHERE mc.tontine_id = :tontine_id
-    ");
+    // Fetch the total count of penalties for the given tontine and user
+    $countStmt = $pdo->prepare("SELECT COUNT(*) AS total
+        FROM penalties
+        WHERE tontine_id = :tontine_id AND user_id = :user_id");
     $countStmt->execute([
         'tontine_id' => $tontine_id,
+        'user_id' => $_SESSION['user_id']
     ]);
     $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Fetch missed contributions for the logged-in user in the given tontine with pagination
-$stmt = $pdo->prepare("
-    SELECT mc.id, mc.missed_date, mc.missed_amount, mc.status, u.phone_number, u.firstname, u.lastname, u.id as user_id
-    FROM missed_contributions mc
-    JOIN users u ON mc.user_id = u.id
-    WHERE mc.tontine_id = :tontine_id
-    AND mc.user_id = :user_id
-    AND mc.id IN (
-        SELECT MAX(mc.id) FROM missed_contributions mc 
-        WHERE mc.tontine_id = :tontine_id
-        GROUP BY mc.user_id, mc.missed_date
-    )
-    ORDER BY mc.missed_date DESC
-    LIMIT :start, :perPage
-");
-$stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
-$stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);  // Filter by logged-in user
-$stmt->bindValue(':start', $start, PDO::PARAM_INT);
-$stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
-$stmt->execute();
+    // Fetch penalties for the logged-in user in the given tontine with pagination
+    $stmt = $pdo->prepare("SELECT p.id, p.penalty_amount, p.infraction_date, p.reason, p.missed_contribution_date, p.status
+        FROM penalties p
+        WHERE p.tontine_id = :tontine_id
+        AND p.user_id = :user_id
+        ORDER BY p.infraction_date DESC
+        LIMIT :start, :perPage");
+    $stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
+    $stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);  // Filter by logged-in user
+    $stmt->bindValue(':start', $start, PDO::PARAM_INT);
+    $stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
+    $stmt->execute();
 
-$contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $penalties = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Debugging output for contributions
-// var_dump($contributions);
-
+    // Fetch the user's phone number
+    $userStmt = $pdo->prepare("SELECT phone_number FROM users WHERE id = :user_id");
+    $userStmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
+    $userStmt->execute();
+    $user = $userStmt->fetch(PDO::FETCH_ASSOC);
 
     // Fetch tontine details
     $tontineStmt = $pdo->prepare("SELECT tontine_name FROM tontine WHERE id = :id");
@@ -89,7 +70,7 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Missed Contributions</title>
+    <title>Your Penalties</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -114,8 +95,8 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </style>
 </head>
 <body>
-     <!-- Navbar -->
-     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -170,65 +151,56 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Main Content -->
     <div class="container">
-        <h1 class="text-center">Your Missed Contributions for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
-        <?php if (!empty($contributions)): ?>
-          <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>User</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Payment Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($contributions as $contribution): ?>
-                  <tr>
-  <td><?php echo htmlspecialchars($contribution['id']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['firstname'] . ' ' . $contribution['lastname']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['missed_date']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['missed_amount']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['status']); ?></td>
-  <td>
+        <h1 class="text-center">Your Penalties for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
+        <?php if (!empty($penalties)): ?>
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Infraction Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Missed Contribution Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($penalties as $penalty): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($penalty['id']); ?></td>
+                            <td><?php echo htmlspecialchars($penalty['infraction_date']); ?></td>
+                            <td><?php echo htmlspecialchars($penalty['penalty_amount']); ?></td>
+                            <td><?php echo htmlspecialchars($penalty['reason']); ?></td>
+                            <td><?php echo htmlspecialchars($penalty['missed_contribution_date']); ?></td>
+                            <td><?php echo htmlspecialchars($penalty['status']); ?></td>
+                            <td>
+                            <a href="pay_penalty.php?penalty_id=<?php echo $penalty['id']; ?>&tontine_id=<?php echo $tontine_id; ?>&amount=<?php echo $penalty['penalty_amount']; ?>&phone=<?php echo urlencode($user['phone_number']); ?>" class="btn btn-primary btn-sm">
+    Pay
+</a>
 
-    <form action="payment_page.php" method="GET">
-        <input type="hidden" name="contribution_id" value="<?php echo $contribution['id']; ?>">
-        <input type="hidden" name="user_id" value="<?php echo $contribution['user_id']; ?>"> 
-        <input type="hidden" name="amount" value="<?php echo $contribution['missed_amount']; ?>">
-        <input type="hidden" name="phone_number" value="<?php echo $contribution['phone_number']; ?>">
-        <!-- Add tontine_id as a hidden input -->
-        <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
-        <button type="submit" class="btn btn-primary">Pay Now</button>
-    </form>
-</td>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
 
-  </td>
-</tr>
-
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-
-        <!-- Pagination -->
-        <div class="text-center">
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
-                    <?php for ($i = 1; $i <= ceil($totalCount / $perPage); $i++): ?>
-                        <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                            <a class="page-link" href="?id=<?php echo $tontine_id; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                        </li>
-                    <?php endfor; ?>
-                </ul>
-            </nav>
-        </div>
+            <!-- Pagination -->
+            <div class="text-center">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        <?php for ($i = 1; $i <= ceil($totalCount / $perPage); $i++): ?>
+                            <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
+                                <a class="page-link" href="?id=<?php echo $tontine_id; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                            </li>
+                        <?php endfor; ?>
+                    </ul>
+                </nav>
+            </div>
         <?php else: ?>
-            <p class="text-center">No missed contributions found.</p>
+            <p class="text-center">No penalties found.</p>
         <?php endif; ?>
     </div>
-
- 
 
     <script>
         function confirmLogout() {

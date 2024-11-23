@@ -498,6 +498,13 @@ body {
      <button type="button" class="btn btn-info btn-sm rounded mt-1">
         <a class="text-white "style="text-decoration:none;" href="penalties_contribution.php?id=<?php echo $id; ?>">Penalties for contributions</a>
     </button>
+    <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="paid_missed_contribution.php?id=<?php echo $id; ?>">Paid missed contributions</a>
+    </button>
+       <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="paid_missed_penalties.php?id=<?php echo $id; ?>">Paid missed penaltiess</a>
+    </button>
+    
 </form>
 
 <!-- Include SweetAlert2 -->

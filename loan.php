@@ -211,47 +211,32 @@ $total_notifications = 5;
         <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
         <input type="hidden" id="total_contributions" value="<?php echo $total_contributions; ?>">
 
-        <!-- Loan Type Dropdown -->
-        <div class="mb-3">
-            <label for="loan_type" class="form-label">Loan Type</label>
-            <select class="form-control" id="loan_type" name="loan_type" onchange="updateLoanRange()">
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-            </select>
-        </div>
 
         <!-- Loan Amount -->
         <div class="mb-3">
-            <label for="amount" class="form-label">Amount</label>
+            <label for="amount" class="form-label">Loan Amount</label>
             <input type="number" class="form-control" id="amount" name="amount" min="500" max="100000" >
-            <small id="amountRange" class="form-text text-muted">Amount Range: 500 - 10,000 (Small), 10,000 - 50,000 (Medium), 50,000 - 100,000 (Large)</small>
+           
         </div>
 
-        Interest amount
+      
         <div class="mb-3">
-            <label for="interest" class="form-label">Interest</label>
+            <label for="interest" class="form-label">Interest rate </label>
+            <input type="text" class="form-control" id="interest" name="interest-rate" value="">
+        </div>
+      
+        <div class="mb-3">
+            <label for="interest" class="form-label">Interest amount </label>
             <input type="text" class="form-control" id="interest" name="interest-amount" value="">
         </div>
-
-        <!-- Payment Frequency
-        <div class="mb-3">
-            <label for="payment_frequency" class="form-label">Payment Frequency</label>
-            <input type="text" class="form-control" id="payment_frequency" name="payment_frequency" value="<?php echo $tontine['payment_frequency'];?>" readonly>
-        </div> -->
-
-        <!-- Total Amount -->
+        
+      
         <div class="mb-3">
             <label for="total_amount" class="form-label">Total Amount</label>
             <input type="text" class="form-control" id="total_amount" name="total_amount"  >
         </div>
 
-        <!-- Upload Collateral (PDF) -->
-        <div class="mb-3">
-            <label for="collateral" class="form-label">Upload Collateral (PDF)</label>
-            <input type="file" class="form-control" id="collateral" name="collateral" accept=".pdf">
-        </div>
-
+     
         <!-- Submit Button -->
         <button type="submit" class="btn btn-submit" id="submitBtn">Submit Join Request</button>
     </form>

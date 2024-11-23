@@ -23,17 +23,6 @@ $page = max($page, 1); // Ensure the page number is at least 1
 $start = ($page - 1) * $perPage;
 
 try {
-    // Delete duplicate missed contributions
-    $deleteDuplicatesStmt = $pdo->prepare("
-        DELETE FROM missed_contributions
-        WHERE id NOT IN (
-            SELECT MAX(id) 
-            FROM missed_contributions 
-            GROUP BY user_id, missed_date
-        )
-    ");
-    $deleteDuplicatesStmt->execute();
-
     // Fetch the total count of distinct missed contributions (one per user and missed date)
     $countStmt = $pdo->prepare("
         SELECT COUNT(DISTINCT mc.user_id, mc.missed_date) AS total
@@ -46,32 +35,91 @@ try {
     ]);
     $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-// Fetch missed contributions for the logged-in user in the given tontine with pagination
-$stmt = $pdo->prepare("
-    SELECT mc.id, mc.missed_date, mc.missed_amount, mc.status, u.phone_number, u.firstname, u.lastname, u.id as user_id
-    FROM missed_contributions mc
-    JOIN users u ON mc.user_id = u.id
-    WHERE mc.tontine_id = :tontine_id
-    AND mc.user_id = :user_id
-    AND mc.id IN (
-        SELECT MAX(mc.id) FROM missed_contributions mc 
+    // Fetch missed contributions and associated payment details
+    $stmt = $pdo->prepare("
+        SELECT mc.id, mc.missed_date, mc.missed_amount, mc.status, u.phone_number, u.firstname, u.lastname, u.id as user_id,
+               mcp.payment_status, mcp.transaction_ref
+        FROM missed_contributions mc
+        LEFT JOIN users u ON mc.user_id = u.id
+        LEFT JOIN missed_contribution_payment mcp ON mc.id = mcp.missed_id
         WHERE mc.tontine_id = :tontine_id
-        GROUP BY mc.user_id, mc.missed_date
-    )
-    ORDER BY mc.missed_date DESC
-    LIMIT :start, :perPage
-");
-$stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
-$stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);  // Filter by logged-in user
-$stmt->bindValue(':start', $start, PDO::PARAM_INT);
-$stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
-$stmt->execute();
+        AND mc.user_id = :user_id
+        AND mc.id IN (
+            SELECT MAX(mc.id) FROM missed_contributions mc 
+            WHERE mc.tontine_id = :tontine_id
+            GROUP BY mc.user_id, mc.missed_date
+        )
+        ORDER BY mc.missed_date DESC
+        LIMIT :start, :perPage
+    ");
+    $stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
+    $stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);  // Filter by logged-in user
+    $stmt->bindValue(':start', $start, PDO::PARAM_INT);
+    $stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
+    $stmt->execute();
 
-$contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Debugging output for contributions
-// var_dump($contributions);
+    // Check payment status for pending contributions and update status
+    foreach ($contributions as $contribution) {
+        $ref_id = $contribution['transaction_ref'];
+        $id = $contribution['id'];
+        $payment_status = $contribution['payment_status'];
 
+        if ($payment_status == "Pending") {
+            // Fetch payment status from the payment gateway
+            $paymentResponse = hdev_payment::get_pay($ref_id);
+
+            if ($paymentResponse) {
+                $status1 = $paymentResponse->status ?? null;
+
+                // Map payment status from the gateway to database values
+                $newStatus = match ($status1) {
+                    'success' => "Approved",      // If the payment status is success
+                    'failed' => "Failure",       // If the payment failed
+                    'pending', 'initiated' => "Pending",  // If the payment is still pending
+                    default => "Unknown",        // For any unexpected status
+                };
+
+                // Log unexpected statuses
+                if ($newStatus === "Unknown") {
+                    error_log("Unexpected payment status: " . $status1 . " for transaction ref: " . $ref_id);
+                }
+
+                // Update the payment status in the missed_contribution_payment table
+                $updateStmt = $pdo->prepare("
+                    UPDATE missed_contribution_payment
+                    SET payment_status = :payment_status
+                    WHERE missed_id = :missed_id
+                ");
+                $updateStmt->bindValue(':payment_status', $newStatus);
+                $updateStmt->bindValue(':missed_id', $id, PDO::PARAM_INT);
+
+                try {
+                    $updateStmt->execute();
+
+                    if ($updateStmt->rowCount() === 0) {
+                        error_log("No rows updated for missed contribution ID: " . $id);
+                    }
+
+                    // If the payment status is 'Approved', update the missed_contributions table to 'Paid'
+                    if ($newStatus == "Approved") {
+                        $updateContributionStmt = $pdo->prepare("
+                            UPDATE missed_contributions
+                            SET status = 'Paid'
+                            WHERE id = :missed_id
+                        ");
+                        $updateContributionStmt->bindValue(':missed_id', $id, PDO::PARAM_INT);
+                        $updateContributionStmt->execute();
+                    }
+                } catch (PDOException $e) {
+                    error_log("Database update error for missed contribution ID $id: " . $e->getMessage());
+                }
+            } else {
+                error_log("Payment gateway response missing for transaction ref: " . $ref_id);
+            }
+        }
+    }
 
     // Fetch tontine details
     $tontineStmt = $pdo->prepare("SELECT tontine_name FROM tontine WHERE id = :id");
@@ -115,6 +163,10 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 <body>
      <!-- Navbar -->
+     <!-- Your Navbar HTML remains the same -->
+
+    <!-- Main Content -->
+     <!-- Navbar -->
      <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
@@ -153,6 +205,16 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <a class="dropdown-item" href="#">Pay for loan</a>
                     </div>
                 </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Penalties
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
+                        <a class="dropdown-item" href="#">View Paid Penalties</a>
+                        <a class="dropdown-item" href="#">View Unpaid Penalties</a>
+                        <a class="dropdown-item" href="#">Pay Penalties</a>
+                    </div>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
                 </li>
@@ -167,9 +229,7 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </ul>
         </div>
     </nav>
-
-    <!-- Main Content -->
-    <div class="container">
+    <div class="container mt-1">
         <h1 class="text-center">Your Missed Contributions for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
         <?php if (!empty($contributions)): ?>
           <table class="table table-bordered table-striped">
@@ -179,34 +239,23 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <th>User</th>
                     <th>Date</th>
                     <th>Amount</th>
+                    <th>Phone Number</th>
                     <th>Payment Status</th>
-                    <th>Actions</th>
+                  
+                   
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($contributions as $contribution): ?>
                   <tr>
-  <td><?php echo htmlspecialchars($contribution['id']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['firstname'] . ' ' . $contribution['lastname']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['missed_date']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['missed_amount']); ?></td>
-  <td><?php echo htmlspecialchars($contribution['status']); ?></td>
-  <td>
-
-    <form action="payment_page.php" method="GET">
-        <input type="hidden" name="contribution_id" value="<?php echo $contribution['id']; ?>">
-        <input type="hidden" name="user_id" value="<?php echo $contribution['user_id']; ?>"> 
-        <input type="hidden" name="amount" value="<?php echo $contribution['missed_amount']; ?>">
-        <input type="hidden" name="phone_number" value="<?php echo $contribution['phone_number']; ?>">
-        <!-- Add tontine_id as a hidden input -->
-        <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
-        <button type="submit" class="btn btn-primary">Pay Now</button>
-    </form>
-</td>
-
-  </td>
-</tr>
-
+                    <td><?php echo htmlspecialchars($contribution['id']); ?></td>
+                    <td><?php echo htmlspecialchars($contribution['firstname'] . ' ' . $contribution['lastname']); ?></td>
+                    <td><?php echo htmlspecialchars($contribution['missed_date']); ?></td>
+                    <td><?php echo htmlspecialchars($contribution['missed_amount']); ?></td>
+                    <td><?php echo htmlspecialchars($contribution['phone_number']); ?></td>
+                    <td><?php echo htmlspecialchars($contribution['payment_status']); ?></td>
+                  
+                  </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
@@ -227,8 +276,6 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <p class="text-center">No missed contributions found.</p>
         <?php endif; ?>
     </div>
-
- 
 
     <script>
         function confirmLogout() {

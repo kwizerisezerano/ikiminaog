@@ -498,6 +498,9 @@ body {
      <button type="button" class="btn btn-info btn-sm rounded mt-1">
         <a class="text-white "style="text-decoration:none;" href="penalties_contribution.php?id=<?php echo $id; ?>">Penalties for contributions</a>
     </button>
+      <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="missed_penalties.php?id=<?php echo $id; ?>">Missed Penalties</a>
+    </button>
 <!-- Include SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

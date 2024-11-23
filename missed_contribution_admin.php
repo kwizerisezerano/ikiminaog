@@ -189,15 +189,7 @@ $contributions = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <td><?php echo htmlspecialchars($contribution['missed_date']); ?></td>
   <td><?php echo htmlspecialchars($contribution['missed_amount']); ?></td>
   <td><?php echo htmlspecialchars($contribution['status']); ?></td>
-  <td>
-    <!-- <form action="payment_page.php" method="GET">
-        <input type="hidden" name="contribution_id" value="<?php echo $contribution['id']; ?>">
-        <input type="hidden" name="user_id" value="<?php echo $contribution['user_id']; ?>"> 
-        <input type="hidden" name="amount" value="<?php echo $contribution['missed_amount']; ?>">
-        <input type="hidden" name="phone_number" value="<?php echo $contribution['phone_number']; ?>">
-        <button type="submit" class="btn btn-primary">Pay Now</button>
-    </form> -->
-  </td>
+ 
 </tr>
 
                 <?php endforeach; ?>
