@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 23, 2024 at 09:08 PM
+-- Generation Time: Nov 24, 2024 at 06:12 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -43,7 +43,7 @@ CREATE TABLE `contributions` (
 --
 
 INSERT INTO `contributions` (`id`, `user_id`, `tontine_id`, `amount`, `payment_method`, `contribution_date`, `transaction_ref`, `payment_status`) VALUES
-(127, 98, 59, 8.00, '0790989830', '2024-11-19', '84dbcaa704e780e5d233a988d575e71f', 'Pending'),
+(127, 98, 59, 8.00, '0790989830', '2024-11-19', '84dbcaa704e780e5d233a988d575e71f', 'Approved'),
 (128, 98, 59, 8.00, '0790989830', '2025-01-19', 'e47359fedb42a2b692145ec949e33132', 'Pending'),
 (129, 98, 60, 9.00, '0790989830', '2024-11-27', '71346c1e51c836bbfb71b5bf8505ba47', 'Failure'),
 (130, 98, 60, 9.00, '0790989830', '2024-12-04', 'e326b1813333e0bf47ff211a08ea761e', 'Failure'),
@@ -59,6 +59,33 @@ INSERT INTO `contributions` (`id`, `user_id`, `tontine_id`, `amount`, `payment_m
 (140, 98, 60, 9.00, '0790989830', '2025-01-01', 'e4805363aed0b2700236c8fdf82e1968', ''),
 (141, 98, 60, 9.00, '0790989830', '2025-01-08', '472853b414d983fa3b457aca9d6564e1', 'Pending'),
 (142, 98, 58, 9.00, '0790989830', '2024-11-23', 'e331e14dc8558b6bc33b4398100ac4ec', 'Pending');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_payments`
+--
+
+CREATE TABLE `loan_payments` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `loan_id` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `payment_date` date DEFAULT NULL,
+  `payment_status` enum('Pending','Approved','Failure') DEFAULT NULL,
+  `transaction_ref` varchar(255) DEFAULT NULL,
+  `late_amount` decimal(10,2) DEFAULT 0.00,
+  `tontine_id` int(11) DEFAULT NULL,
+  `phone_number` varchar(30) NOT NULL,
+  `user_payment_date` date NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `loan_payments`
+--
+
+INSERT INTO `loan_payments` (`id`, `user_id`, `loan_id`, `amount`, `payment_date`, `payment_status`, `transaction_ref`, `late_amount`, `tontine_id`, `phone_number`, `user_payment_date`) VALUES
+(20, 98, 17, 125.00, '2024-11-24', 'Pending', '0fcf9b6cd4bbdcf2d42e50c2c165c48c', 11.00, 59, '0790989830', '0000-00-00');
 
 -- --------------------------------------------------------
 
@@ -79,19 +106,16 @@ CREATE TABLE `loan_requests` (
   `phone_number` varchar(20) NOT NULL,
   `status` enum('Pending','Approved','Rejected','Disbursed') DEFAULT 'Pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `late_loan_repayment_amount` decimal(10,2) DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `loan_requests`
 --
 
-INSERT INTO `loan_requests` (`id`, `user_id`, `tontine_id`, `loan_amount`, `interest_rate`, `interest_amount`, `total_amount`, `payment_frequency`, `payment_date`, `phone_number`, `status`, `created_at`, `updated_at`) VALUES
-(3, 98, 59, 5000.00, 10.00, 500.00, 5500.00, '', NULL, '0790989830', 'Pending', '2024-11-23 19:05:09', '2024-11-23 19:05:09'),
-(4, 98, 59, 800.00, 10.00, 80.00, 880.00, '', NULL, '0790989830', 'Pending', '2024-11-23 19:08:03', '2024-11-23 19:08:03'),
-(5, 98, 59, 900.00, 10.00, 90.00, 990.00, 'Not specified', NULL, '0790989830', 'Pending', '2024-11-23 19:22:11', '2024-11-23 19:22:11'),
-(6, 98, 59, 700.00, 10.00, 70.00, 770.00, 'Monthly', '2024-11-29', '0790989830', 'Pending', '2024-11-23 19:23:58', '2024-11-23 19:23:58'),
-(7, 98, 59, 900.00, 10.00, 90.00, 990.00, 'Monthly', '2024-11-29', '0790989830', 'Pending', '2024-11-23 19:27:14', '2024-11-23 19:27:14');
+INSERT INTO `loan_requests` (`id`, `user_id`, `tontine_id`, `loan_amount`, `interest_rate`, `interest_amount`, `total_amount`, `payment_frequency`, `payment_date`, `phone_number`, `status`, `created_at`, `updated_at`, `late_loan_repayment_amount`) VALUES
+(17, 98, 59, 899.00, 66.00, 593.34, 1492.34, 'Monthly', '2024-11-24', '0790989830', 'Pending', '2024-11-24 11:40:33', '2024-11-24 11:55:49', 11.00);
 
 -- --------------------------------------------------------
 
@@ -114,7 +138,7 @@ CREATE TABLE `missed_contributions` (
 --
 
 INSERT INTO `missed_contributions` (`id`, `user_id`, `tontine_id`, `missed_amount`, `missed_date`, `created_at`, `status`) VALUES
-(508, 98, 59, 8.00, '2024-12-19', '2025-01-19 09:46:58', 'Paid'),
+(508, 98, 59, 8.00, '2024-12-19', '2025-01-19 09:46:58', 'Unpaid'),
 (645, 98, 58, 6.00, '2024-11-23', '2024-12-28 10:15:45', 'Unpaid'),
 (646, 98, 58, 6.00, '2024-11-24', '2024-12-28 10:15:45', 'Unpaid'),
 (647, 98, 58, 6.00, '2024-11-25', '2024-12-28 10:15:45', 'Unpaid'),
@@ -227,7 +251,7 @@ CREATE TABLE `penalties` (
 --
 
 INSERT INTO `penalties` (`id`, `user_id`, `tontine_id`, `penalty_amount`, `infraction_date`, `reason`, `missed_contribution_date`, `status`) VALUES
-(541, 98, 59, 5.00, '2025-01-19 09:46:58', 'Missed contributions', '2024-12-19', 'Paid'),
+(541, 98, 59, 5.00, '2025-01-19 09:46:58', 'Missed contributions', '2024-12-19', 'Unpaid'),
 (542, 98, 60, 0.00, '2024-11-27 10:04:38', 'Missed contributions', '2024-11-20', 'Unpaid'),
 (543, 98, 60, 0.00, '2024-12-04 10:06:38', 'Missed contributions', '2024-11-20', 'Unpaid'),
 (544, 98, 60, 0.00, '2024-12-11 10:07:04', 'Missed contributions', '2024-11-20', 'Unpaid'),
@@ -422,13 +446,6 @@ CREATE TABLE `penalty_payment` (
   `payment_date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `penalty_payment`
---
-
-INSERT INTO `penalty_payment` (`id`, `user_id`, `tontine_id`, `penalty_id`, `amount`, `phone_number`, `payment_status`, `transaction_ref`, `payment_date`) VALUES
-(10, 98, 59, 541, 5.00, '0790989830', 'Approved', '9fbf320e03d881558868b003cb215f28', '2024-11-23 15:22:26');
-
 -- --------------------------------------------------------
 
 --
@@ -459,27 +476,28 @@ CREATE TABLE `tontine` (
   `payment_frequency` enum('Monthly','Weekly') NOT NULL,
   `frequent_payment_date` date DEFAULT NULL,
   `frequent_payment_day` enum('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday') DEFAULT NULL,
-  `late_contribution_penalty` int(50) NOT NULL
+  `late_contribution_penalty` int(50) NOT NULL,
+  `late_loan_repayment_amount` decimal(10,2) DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tontine`
 --
 
-INSERT INTO `tontine` (`id`, `tontine_name`, `logo`, `join_date`, `province`, `district`, `sector`, `total_contributions`, `occurrence`, `time`, `day`, `date`, `created_at`, `user_id`, `role`, `purpose`, `rules`, `status`, `reason`, `interest`, `payment_frequency`, `frequent_payment_date`, `frequent_payment_day`, `late_contribution_penalty`) VALUES
-(32, 'UBUMWE bwacu', 'uploads/6727e61ea7f83.png', '2024-11-03', 'Kigali', 'Gasabo', 'Rutunga', 600.00, 'Monthly', '00:00:00', '', '2024-11-03', '2024-11-03 21:07:42', 97, 'Admin', 'raise each other', 'contribute on time bro', 'Rejected', 'no', 0.00, 'Monthly', NULL, NULL, 0),
-(50, 'lycee de muhura', 'uploads/6731c84fa5e00.png', '2024-11-11', 'Kigali', 'Gasabo', 'Rutunga', 5.00, 'Monthly', '11:02:00', '', '2024-11-11', '2024-11-11 09:03:11', 98, 'Admin', 'rapid development through contributions and loans mine kkkkk', 'contribute on time', 'Justified', 'ok', 8.00, 'Weekly', '0000-00-00', 'Monday', 10),
-(51, 'ISHUTI ZACU', 'uploads/6734a96b90ac1.png', '2024-11-13', 'Kigali', 'Gasabo', 'Remera', 1.00, 'Daily', '15:28:00', '', '0000-00-00', '2024-11-13 13:28:11', 97, 'Admin', '', '', 'Rejected', 'ok', 0.00, 'Monthly', NULL, NULL, 0),
-(52, 'ok', 'uploads/673a0450dc821.png', '2024-11-17', 'Kigali', 'Gasabo', 'Rutunga', 900.00, 'Monthly', '16:57:00', '', '0000-00-00', '2024-11-17 14:57:20', 99, 'Admin', 'raise ecah other', 'contribute on time', 'Not Justified', '', 6.00, 'Monthly', '2024-11-17', 'Monday', 0),
-(53, 'testing', 'uploads/673a0718706ce.png', '2024-11-17', 'East', 'Bugesera', 'Shyara', 5.00, 'Monthly', '17:09:00', '', '2024-11-17', '2024-11-17 15:09:12', 99, 'Admin', 'purpose', 'just us', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(54, 'popo', 'uploads/673a0a584f17b.png', '2024-11-17', 'West', 'Ngororero', 'Sovu', 4.00, 'Weekly', '17:23:00', 'Monday', '0000-00-00', '2024-11-17 15:23:04', 99, 'Admin', '', '', 'Not Justified', '', 9.00, 'Weekly', '0000-00-00', 'Monday', 0),
-(55, 'pol', 'uploads/673a0ad947564.png', '2024-11-17', 'Kigali', 'Gasabo', 'Rutunga', 3.00, 'Monthly', '17:25:00', '', '2024-11-17', '2024-11-17 15:25:13', 99, 'Admin', '', '', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(56, 'ok', 'uploads/673a0badeffb0.png', '2024-11-17', 'East', 'Bugesera', 'Rweru', 7.00, 'Monthly', '17:28:00', '', '2024-11-17', '2024-11-17 15:28:45', 99, 'Admin', '', '', 'Not Justified', '', 9.00, 'Monthly', '2024-11-17', 'Monday', 0),
-(57, 'ppp', 'uploads/673a108e8afc2.png', '2024-11-17', 'East', 'Gatsibo', 'Muhura', 5.00, 'Monthly', '17:49:00', 'Wednesday', '2024-11-17', '2024-11-17 15:49:34', 99, 'Admin', '', '', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(58, 'nmusafiri', 'uploads/673cab5b6752c.png', '2024-11-19', 'Kigali', 'Gasabo', 'Remera', 6.00, 'Daily', '17:14:00', '', '0000-00-00', '2024-11-19 15:14:35', 98, 'Admin', 'ok', 'ok', 'Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(59, 'Winners Tontine', 'uploads/673cc80750e1d.png', '2024-11-19', 'Kigali', 'Gasabo', 'Rutunga', 8.00, 'Monthly', '19:16:00', 'Friday', '2024-11-19', '2024-11-19 17:16:55', 98, 'Admin', 'l', 'l', 'Justified', '', 10.00, 'Monthly', '2024-11-29', 'Monday', 5),
-(60, 'l', 'uploads/673d97b393f4a.png', '2024-11-20', 'East', 'Rwamagana', 'Rubona', 9.00, 'Weekly', '10:02:00', 'Wednesday', '0000-00-00', '2024-11-20 08:02:59', 98, 'Admin', '', '', 'Justified', '', 0.00, 'Monthly', NULL, NULL, 0),
-(61, 'IPRC TUMBA ', 'uploads/673dbc39e23b2.png', '2024-11-20', 'East', 'Gatsibo', 'Rwimbogo', 5.00, 'Monthly', '12:38:00', 'Thursday', '2024-11-20', '2024-11-20 10:38:49', 101, 'Admin', '', '', 'Justified', 'ok', 0.00, 'Monthly', NULL, NULL, 0);
+INSERT INTO `tontine` (`id`, `tontine_name`, `logo`, `join_date`, `province`, `district`, `sector`, `total_contributions`, `occurrence`, `time`, `day`, `date`, `created_at`, `user_id`, `role`, `purpose`, `rules`, `status`, `reason`, `interest`, `payment_frequency`, `frequent_payment_date`, `frequent_payment_day`, `late_contribution_penalty`, `late_loan_repayment_amount`) VALUES
+(32, 'UBUMWE bwacu', 'uploads/6727e61ea7f83.png', '2024-11-03', 'Kigali', 'Gasabo', 'Rutunga', 600.00, 'Monthly', '00:00:00', '', '2024-11-03', '2024-11-03 21:07:42', 97, 'Admin', 'raise each other', 'contribute on time bro', 'Rejected', 'no', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
+(50, 'lycee de muhura', 'uploads/6731c84fa5e00.png', '2024-11-11', 'Kigali', 'Gasabo', 'Rutunga', 5.00, 'Monthly', '11:02:00', '', '2024-11-11', '2024-11-11 09:03:11', 98, 'Admin', 'rapid development through contributions and loans mine kkkkk', 'contribute on time', 'Justified', 'ok', 8.00, 'Weekly', '0000-00-00', 'Monday', 10, 0.00),
+(51, 'ISHUTI ZACU', 'uploads/6734a96b90ac1.png', '2024-11-13', 'Kigali', 'Gasabo', 'Remera', 1.00, 'Daily', '15:28:00', '', '0000-00-00', '2024-11-13 13:28:11', 97, 'Admin', '', '', 'Rejected', 'ok', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
+(52, 'ok', 'uploads/673a0450dc821.png', '2024-11-17', 'Kigali', 'Gasabo', 'Rutunga', 900.00, 'Monthly', '16:57:00', '', '0000-00-00', '2024-11-17 14:57:20', 99, 'Admin', 'raise ecah other', 'contribute on time', 'Not Justified', '', 6.00, 'Monthly', '2024-11-17', 'Monday', 0, 0.00),
+(53, 'testing', 'uploads/673a0718706ce.png', '2024-11-17', 'East', 'Bugesera', 'Shyara', 5.00, 'Monthly', '17:09:00', '', '2024-11-17', '2024-11-17 15:09:12', 99, 'Admin', 'purpose', 'just us', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
+(54, 'popo', 'uploads/673a0a584f17b.png', '2024-11-17', 'West', 'Ngororero', 'Sovu', 4.00, 'Weekly', '17:23:00', 'Monday', '0000-00-00', '2024-11-17 15:23:04', 99, 'Admin', '', '', 'Not Justified', '', 9.00, 'Weekly', '0000-00-00', 'Monday', 0, 0.00),
+(55, 'pol', 'uploads/673a0ad947564.png', '2024-11-17', 'Kigali', 'Gasabo', 'Rutunga', 3.00, 'Monthly', '17:25:00', '', '2024-11-17', '2024-11-17 15:25:13', 99, 'Admin', '', '', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
+(56, 'ok', 'uploads/673a0badeffb0.png', '2024-11-17', 'East', 'Bugesera', 'Rweru', 7.00, 'Monthly', '17:28:00', '', '2024-11-17', '2024-11-17 15:28:45', 99, 'Admin', '', '', 'Not Justified', '', 9.00, 'Monthly', '2024-11-17', 'Monday', 0, 0.00),
+(57, 'ppp', 'uploads/673a108e8afc2.png', '2024-11-17', 'East', 'Gatsibo', 'Muhura', 5.00, 'Monthly', '17:49:00', 'Wednesday', '2024-11-17', '2024-11-17 15:49:34', 99, 'Admin', '', '', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
+(58, 'nmusafiri', 'uploads/673cab5b6752c.png', '2024-11-19', 'Kigali', 'Gasabo', 'Remera', 6.00, 'Daily', '17:14:00', '', '0000-00-00', '2024-11-19 15:14:35', 98, 'Admin', 'ok', 'ok', 'Justified', '', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
+(59, 'Winners Tontine', 'uploads/673cc80750e1d.png', '2024-11-19', 'Kigali', 'Gasabo', 'Rutunga', 8.00, 'Monthly', '19:16:00', 'Friday', '2024-11-19', '2024-11-19 17:16:55', 98, 'Admin', 'Raise each other through contributions', 'respect all terms and regulation', 'Justified', '', 66.00, 'Monthly', '2024-11-24', NULL, 5, 11.00),
+(60, 'l', 'uploads/673d97b393f4a.png', '2024-11-20', 'East', 'Rwamagana', 'Rubona', 9.00, 'Weekly', '10:02:00', 'Wednesday', '0000-00-00', '2024-11-20 08:02:59', 98, 'Admin', '', '', 'Justified', '', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
+(61, 'IPRC TUMBA ', 'uploads/673dbc39e23b2.png', '2024-11-20', 'East', 'Gatsibo', 'Rwimbogo', 5.00, 'Monthly', '12:38:00', 'Thursday', '2024-11-20', '2024-11-20 10:38:49', 101, 'Admin', '', '', 'Justified', 'ok', 0.00, 'Monthly', NULL, NULL, 0, 0.00);
 
 -- --------------------------------------------------------
 
@@ -551,7 +569,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `firstname`, `lastname`, `phone_number`, `idno`, `idnotype`, `idno_picture`, `behalf_name`, `behalf_phone_number`, `password`, `image`, `otp`, `verified`, `otp_used`, `otp_login`, `otp_forgot`, `otp_behalf`, `otp_behalf_used`, `terms`, `created_at`, `updated_at`, `role`) VALUES
 (96, 'MUGIRANEZA Laurent', 'love you', '0733282490', '', '', '', '', '', '$2y$10$AnJHXFWTzgw3rrocjapv8eNAhSB/ft0FSfQJFuWHByS21MkzRwoOi', '', 803587, 0, 0, 0, 0, 0, 0, 1, '2024-11-03 20:50:49', '2024-11-03 20:50:49', 'User'),
 (97, 'KWIZERISEZERANO', 'x', '0782329100', '', '', '', '', '', '$2y$10$RR1zg0.KGbWLnNCXf2AUmOd3BWYAwlYA4EobOma/ZC4Z5m.DcEG06', 'uploads/6727e48978b64.jpg', 385747, 1, 1, 138245, 0, 276850, 0, 1, '2024-11-03 20:53:56', '2024-11-16 20:09:22', 'User'),
-(98, 'KWIZERA', 'Isezerano mine', '0790989830', '1200180178531093', 'Rwandan', 'uploads/idno_67360f229e1617.09390862.jpeg', 'MUKAMUGANGA Christine', '0790989830', '$2y$10$YEWdAlYyOAv8Ew5H6ruGheVwvtTdR6I452HZS1.hviiHDSJ53YWUC', 'uploads/6740a1e87a9ec.jpg', 195030, 1, 1, 694811, 0, 911154, 1, 1, '2024-11-09 05:39:45', '2024-11-23 10:57:36', 'User'),
+(98, 'KWIZERA', 'Isezerano mine', '0790989830', '1200180178531093', 'Rwandan', 'uploads/idno_67360f229e1617.09390862.jpeg', 'MUKAMUGANGA Christine', '0790989830', '$2y$10$YEWdAlYyOAv8Ew5H6ruGheVwvtTdR6I452HZS1.hviiHDSJ53YWUC', 'uploads/6740a1e87a9ec.jpg', 195030, 1, 1, 321156, 0, 911154, 1, 1, '2024-11-09 05:39:45', '2024-11-24 09:55:22', 'User'),
 (99, 'NIYONSHUTI', 'Immacule mine', '0787714717', '1200180178531097', 'Rwandan', 'uploads/idno_6738f9c6b98995.08355114.jpg', '', '', '$2y$10$YqFTodUnuNDJJNwLD99ueO5/HU00uJhRSma9JuKaT6DV4mH..oxg6', 'uploads/6738fa088abd2.jpg', 407529, 1, 1, 867407, 0, 0, 0, 1, '2024-11-15 14:36:34', '2024-11-20 11:11:37', 'Sector'),
 (100, 'mine', 'bebe', '0790989839', '', '', '', '', '', '$2y$10$30wq5AYA/dONf/phlMCA7.9uutpDZRwnfCETGXI/NEpKLVzgiRHTa', '', 920277, 1, 1, 404837, 0, 0, 0, 1, '2024-11-15 15:00:58', '2024-11-15 15:03:37', 'Court'),
 (101, 'UKOBIZABA', 'Jean Baptiste', '0788474304', '', '', '', '', '', '$2y$10$iC.0qPUY.qujQWvcoCbD4eQSKE.VeFXptCgPOLJikUtvWog8yvrG.', 'uploads/673dbb0e2a61e.jpg', 312026, 1, 1, 697406, 0, 0, 0, 1, '2024-11-20 10:22:27', '2024-11-20 10:33:50', 'User');
@@ -567,6 +585,15 @@ ALTER TABLE `contributions`
   ADD PRIMARY KEY (`id`),
   ADD KEY `tontine_id` (`tontine_id`),
   ADD KEY `idx_contributions_user_tontine` (`user_id`,`tontine_id`);
+
+--
+-- Indexes for table `loan_payments`
+--
+ALTER TABLE `loan_payments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `tontine_id` (`tontine_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `loan_id` (`loan_id`);
 
 --
 -- Indexes for table `loan_requests`
@@ -648,10 +675,16 @@ ALTER TABLE `contributions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
 
 --
+-- AUTO_INCREMENT for table `loan_payments`
+--
+ALTER TABLE `loan_payments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
 -- AUTO_INCREMENT for table `loan_requests`
 --
 ALTER TABLE `loan_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `missed_contributions`
@@ -711,6 +744,14 @@ ALTER TABLE `users`
 ALTER TABLE `contributions`
   ADD CONSTRAINT `contributions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `contributions_ibfk_2` FOREIGN KEY (`tontine_id`) REFERENCES `tontine` (`id`);
+
+--
+-- Constraints for table `loan_payments`
+--
+ALTER TABLE `loan_payments`
+  ADD CONSTRAINT `loan_payments_ibfk_1` FOREIGN KEY (`tontine_id`) REFERENCES `tontine` (`id`),
+  ADD CONSTRAINT `loan_payments_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `loan_payments_ibfk_3` FOREIGN KEY (`loan_id`) REFERENCES `loan_requests` (`id`);
 
 --
 -- Constraints for table `loan_requests`

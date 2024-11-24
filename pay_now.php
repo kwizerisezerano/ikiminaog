@@ -13,7 +13,8 @@ if (!isset($_SESSION['user_id'])) {
 
 // Get the loan ID, amount, payment date, late repayment amount, and tontine_id from the URL
 $loan_id = isset($_GET['loan_id']) ? (int)$_GET['loan_id'] : null;
-$amount = isset($_POST['amount']) ? (float)$_POST['amount'] : null;
+$amountgot = isset($_GET['amount']) ? (float)$_GET['amount'] : null;
+$amount=isset($_POST['amount']) ? (float)$_POST['amount'] :null;
 $payment_date = isset($_GET['payment_date']) ? $_GET['payment_date'] : null;
 $late_amount = isset($_GET['late_amount']) ? (float)$_GET['late_amount'] : 0.0;  // Optional late repayment amount
 $tontine_id = isset($_GET['tontine_id']) ? (int)$_GET['tontine_id'] : null; // Get tontine_id
@@ -25,7 +26,7 @@ $transaction_ref = bin2hex(random_bytes(16));  // Generate a unique transaction 
 if (!$loan_id || !$payment_date || !$tontine_id) {
     echo "<script>
             alert('Required parameters are missing.');
-            window.location.href = 'loan_list.php?id=$tontine_id';
+           window.location.href = 'loan_success.php?id=$tontine_id';
           </script>";
     exit();
 }
@@ -43,10 +44,13 @@ try {
     if (!$loan) {
         echo "<script>
                 alert('Loan not found.');
-                  window.location.href = 'loan_list.php?id=$tontine_id';
+                 window.location.href = 'loan_success.php?id=$tontine_id';
               </script>";
         exit();
     }
+    // Calculate the monthly payment
+ 
+    $monthlyPayment = round($amountgot  / 12, 2);
 
     // **Check for duplicate payment**:
     $checkPaymentStmt = $pdo->prepare("SELECT * FROM loan_payments WHERE tontine_id = :tontine_id AND loan_id = :loan_id AND user_id = :user_id AND (payment_status = 'Approved' OR payment_status = 'Pending')");
@@ -59,7 +63,7 @@ try {
     if ($checkPaymentStmt->rowCount() > 0) {
         echo "<script>
                 alert('A payment for this loan has already been made or is pending.');
-            window.location.href = 'loan_list.php?id=$tontine_id';
+            window.location.href = 'loan_success.php?id=$tontine_id';
               </script>";
         exit();
     }
@@ -75,7 +79,7 @@ try {
         if ($pay->status !== 'success') {
             echo "<script>
                     alert('Payment failed: " . $pay->message . "');
-                  window.location.href = 'loan_list.php?id=$tontine_id';
+                 window.location.href = 'loan_success.php?id=$tontine_id';
                   </script>";
             exit();
         }
@@ -102,7 +106,7 @@ try {
         // Payment successful, now redirect the user back to their loan list page
         echo "<script>
                 alert('Payment successful!');
-                 window.location.href = 'loan_list.php?id=$tontine_id';
+                 window.location.href = 'paid_loan_list.php?id=$tontine_id';
               </script>";
         exit();
     }
@@ -110,7 +114,7 @@ try {
 } catch (PDOException $e) {
     echo "<script>
             alert('Error: " . htmlspecialchars($e->getMessage()) . "');
-            window.location.href = 'loan_list.php?id=$tontine_id';
+          window.location.href = 'loan_success.php?id=$tontine_id';
           </script>";
     exit();
 }
@@ -175,6 +179,8 @@ try {
                 <p><strong>Due Payment Date:</strong> <?php echo htmlspecialchars($loan['payment_date']); ?></p>
                 <p><strong>Late Loan Repayment Amount:</strong> RWF <?php echo number_format(round($late_amount), 0); ?></p>
                 <p><strong>Tota Amount:</strong> <?php echo number_format(round($amount), 0); ?></p>
+                <p><strong>Total Amount:</strong> <?php echo number_format($monthlyPayment, 2); ?></p>
+
 
                 <form action="pay_now.php?loan_id=<?php echo $loan_id; ?>&amount=<?php echo round($amount); ?>&payment_date=<?php echo urlencode($payment_date); ?>&late_amount=<?php echo round($late_amount); ?>&tontine_id=<?php echo $tontine_id; ?>" method="POST">
                     <div class="form-group">
@@ -183,7 +189,7 @@ try {
                     </div>
                     <div class="form-group">
                         <label for="amount">Amount to Pay</label>
-                        <input type="number" class="form-control" id="amount" name="amount"  >
+                        <input type="number" class="form-control" id="amount" name="amount" value="<?php echo (floor($monthlyPayment) == $monthlyPayment) ? $monthlyPayment : ceil($monthlyPayment); ?>" readonly>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Pay Now</button>
                 </form>
