@@ -28,7 +28,7 @@ $user_phone = htmlspecialchars($user['phone_number']);  // Added phone number fr
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Fetch tontine details
-$stmt = $pdo->prepare("SELECT tontine_name, interest, payment_frequency, frequent_payment_date, frequent_payment_day, late_contribution_penalty FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, interest, payment_frequency, frequent_payment_date, frequent_payment_day, late_contribution_penalty, late_loan_repayment_amount  FROM tontine WHERE id = :id");
 $stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
 $stmt->execute();
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -42,7 +42,7 @@ $payment_frequency = $tontine['payment_frequency'];  // Monthly or Weekly
 $frequent_payment_date = $tontine['frequent_payment_date'];  // Payment date or start date
 $frequent_payment_day = $tontine['frequent_payment_day'];  // Payment day if weekly
 $late_contribution_penalty = $tontine['late_contribution_penalty'];  // Penalty for late contribution
-
+$loan_late_amount   = $tontine['late_loan_repayment_amount']; //
 // Notification count
 $total_notifications = 5;
 
@@ -249,6 +249,11 @@ $total_notifications = 5;
             <input type="text" class="form-control" id="phone_number" name="phone_number" value="<?php echo $user_phone; ?>" readonly>
         </div>
 
+            <!-- Payment Frequency -->
+        <div class="mb-1">
+            <label for="payment_frequency" class="form-label"> Late Loan Repayment Amount </label>
+            <input type="text" class="form-control" id="payment_frequency" name="late_loan_amount" value="<?php echo htmlspecialchars($loan_late_amount); ?>" readonly>
+        </div>
         <!-- Submit Button -->
         <button type="submit" class="btn btn-submit mb-1" id="submitBtn">Send Loan Request</button>
     </form>

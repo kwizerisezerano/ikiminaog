@@ -27,7 +27,7 @@ $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Fetch tontine details
-$stmt = $pdo->prepare("SELECT tontine_name, interest FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, interest,late_loan_repayment_amount FROM tontine WHERE id = :id");
 $stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
 $stmt->execute();
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -39,6 +39,7 @@ if (!$tontine) {
 
 // Get the total contributions for calculation
 $total_contributions = $tontine['interest'];
+$late_loan_repayment_amount = $tontine['late_loan_repayment_amount'];
 
 // Notification count
 $total_notifications = 5;
@@ -220,10 +221,16 @@ $total_notifications = 5;
     </select>
 </div>
 
-    <!-- Frequent Payment Date (only if Monthly) -->
-    <div class="mb-3" id="frequent_payment_date_div">
-        <label for="frequent_payment_date" class="form-label">Frequent Payment Date</label>
-        <input type="date" class="form-control" id="frequent_payment_date" name="frequent_payment_date">
+   <!-- Frequent Payment Date (only if Monthly) -->
+<div class="mb-3" id="frequent_payment_date_div">
+    <label for="frequent_payment_date" class="form-label">Frequent Payment Date</label>
+    <input type="date" class="form-control" id="frequent_payment_date" name="frequent_payment_date" min="">
+</div>
+
+     <!-- Interest -->
+    <div class="mb-3">
+        <label for="interest" class="form-label">Late Loan Repayment Penality Amount</label>
+        <input type="number" class="form-control" id="interest" name="late_loan_repayment_amount" step="0.01" value="<?php echo $late_loan_repayment_amount;?>">
     </div>
 
     <button type="submit" class="btn btn-submit">Update Loan related data</button>
@@ -231,6 +238,12 @@ $total_notifications = 5;
 </div>
 
 <script>
+    // Set the minimum date for the date input field to today's date
+document.addEventListener("DOMContentLoaded", function() {
+    var today = new Date();
+    var formattedDate = today.toISOString().split('T')[0];  // Get the date in YYYY-MM-DD format
+    document.getElementById("frequent_payment_date").setAttribute("min", formattedDate);
+});
 // Remove all the logic related to weekly and keep the Monthly logic only
 $('#joinForm').on('submit', function(e) {
     e.preventDefault();

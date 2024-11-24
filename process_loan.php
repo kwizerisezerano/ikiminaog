@@ -22,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $payment_frequency = isset($_POST['payment_frequency']) ? htmlspecialchars($_POST['payment_frequency']) : '';
     $payment_date = isset($_POST['frequent_payment_date']) ? htmlspecialchars($_POST['frequent_payment_date']) : null;
     $phone_number = isset($_POST['phone_number']) ? htmlspecialchars($_POST['phone_number']) : '';
+    $late_loan_repayment_amount = isset($_POST['late_loan_amount']) ? htmlspecialchars($_POST['late_loan_amount']) : 0.00; // Default to 0 if not provided
 
     // Validate loan amount
     if ($loan_amount <= 0) {
@@ -60,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         phone_number, 
                         status, 
                         created_at, 
-                        updated_at
+                        updated_at,                       
+                        late_loan_repayment_amount 
                     ) VALUES (
                         :user_id, 
                         :tontine_id, 
@@ -73,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         :phone_number, 
                         'Pending', 
                         NOW(), 
-                        NOW()
+                        NOW(),
+                        :late_loan_repayment_amount
                     )");
 
     // Bind parameters
@@ -86,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt->bindParam(':payment_frequency', $payment_frequency, PDO::PARAM_STR);
     $stmt->bindParam(':payment_date', $payment_date, PDO::PARAM_STR); // Handle payment_date if it's null
     $stmt->bindParam(':phone_number', $phone_number);
+    $stmt->bindParam(':late_loan_repayment_amount', $late_loan_repayment_amount, PDO::PARAM_STR);  // Correct binding
 
     // Execute the query and check if the insertion is successful
     if ($stmt->execute()) {

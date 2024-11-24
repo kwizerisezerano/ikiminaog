@@ -48,7 +48,7 @@ if (!$sectorExists) {
 }
 
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status,interest, payment_frequency ,frequent_payment_date,frequent_payment_day,late_contribution_penalty  FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status,interest, payment_frequency ,frequent_payment_date,frequent_payment_day,late_contribution_penalty,late_loan_repayment_amount  FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -439,8 +439,9 @@ body {
 
         <div class="section-item mb-1 pb-1">
             <h6 class="text-info">Penalties</h6>
-            <p><strong> Contribution Late Fee:</strong> <?php echo $tontine['late_contribution_penalty']; ?> RWF per 1 place</p>
-          
+            <p><strong> Contribution Late Amount:</strong> <?php echo $tontine['late_contribution_penalty']; ?> RWF per 1 place</p>
+
+            <p><strong> Late Loan Repayment Amount:</strong> <?php echo $tontine['late_loan_repayment_amount']; ?> RWF per 1 place</p>
         </div>
     </div>
 <!-- Purpose & Rules Section -->
