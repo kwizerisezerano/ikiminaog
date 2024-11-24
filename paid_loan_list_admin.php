@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 // Get the Tontine ID from the URL or POST
-$tontine_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$tontine_id = isset($_GET['id']) ? filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT) : null;
 
 if (!$tontine_id) {
     header("Location: tontines.php");
@@ -23,32 +23,30 @@ $page = max($page, 1); // Ensure the page number is at least 1
 $start = ($page - 1) * $perPage;
 
 try {
-    // Fetch the total count of loan payments for the given tontine_id and user_id
+    // Fetch the total count of loan payments for the given tontine_id
     $countStmt = $pdo->prepare("
         SELECT COUNT(*) AS total
         FROM loan_payments lp
         JOIN loan_requests lr ON lp.loan_id = lr.id
-        WHERE lr.tontine_id = :tontine_id AND lp.user_id = :user_id
+        WHERE lr.tontine_id = :tontine_id
     ");
     $countStmt->execute([
-        'tontine_id' => $tontine_id,
-        'user_id' => $_SESSION['user_id'],
+        'tontine_id' => $tontine_id
     ]);
     $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-    // Fetch loan payments and associated loan request details
+    // Fetch loan payments and associated loan request details for all users
     $stmt = $pdo->prepare("
         SELECT lp.id, lp.amount, lp.payment_date, lp.payment_status, lp.transaction_ref, lp.phone_number,
                lr.loan_amount, lr.interest_rate, lr.total_amount, lr.payment_frequency, lr.status AS loan_status,
-               lr.created_at AS loan_created_at
+               lr.created_at AS loan_created_at, lp.user_id
         FROM loan_payments lp
         JOIN loan_requests lr ON lp.loan_id = lr.id
-        WHERE lr.tontine_id = :tontine_id AND lp.user_id = :user_id
+        WHERE lr.tontine_id = :tontine_id
         ORDER BY lp.payment_date DESC
         LIMIT :start, :perPage
     ");
     $stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
-    $stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
     $stmt->bindValue(':start', $start, PDO::PARAM_INT);
     $stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
     $stmt->execute();
@@ -84,7 +82,7 @@ try {
 
                 // Log unexpected statuses
                 if ($newStatus === "Unknown") {
-                    error_log("Unexpected payment status: " . $status1 . " for transaction ref: " . $ref_id);
+                    error_log("Unexpected payment status: {$status1} for transaction ref: {$ref_id}, Payment ID: {$id}");
                 }
 
                 // Update the payment status in the database
@@ -100,13 +98,13 @@ try {
                     $updateStmt->execute();
 
                     if ($updateStmt->rowCount() === 0) {
-                        error_log("No rows updated for loan payment ID: " . $id);
+                        error_log("No rows updated for loan payment ID: {$id}");
                     }
                 } catch (PDOException $e) {
-                    error_log("Database update error for ID $id: " . $e->getMessage());
+                    error_log("Database update error for ID {$id}: " . $e->getMessage());
                 }
             } else {
-                error_log("Payment gateway response missing for transaction ref: " . $ref_id);
+                error_log("Payment gateway response missing for transaction ref: {$ref_id}");
             }
         }
     }
@@ -121,7 +119,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Loan Payments</title>
+    <title>Loan Payments - <?php echo htmlspecialchars($tontine['tontine_name']); ?></title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -170,13 +168,14 @@ try {
     </nav>
 
     <div class="container mt-1">
-        <h1 class="text-center">Your Loan Payments for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
+        <h1 class="text-center">Loan Payments for Tontine: <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
 
         <?php if (!empty($loanPayments)): ?>
             <table class="table table-bordered table-striped">
                 <thead>
                     <tr>
                         <th>ID</th>
+                        <th>User ID</th> <!-- Added column to show user ID -->
                         <th>Loan Amount</th>
                         <th>Interest Rate</th>
                         <th>Total Amount</th>
@@ -190,6 +189,7 @@ try {
                     <?php foreach ($loanPayments as $payment): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($payment['id']); ?></td>
+                            <td><?php echo htmlspecialchars($payment['user_id']); ?></td> <!-- Displaying user ID -->
                             <td><?php echo htmlspecialchars($payment['loan_amount']); ?></td>
                             <td><?php echo htmlspecialchars($payment['interest_rate']); ?>%</td>
                             <td><?php echo htmlspecialchars($payment['total_amount']); ?></td>
