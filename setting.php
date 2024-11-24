@@ -294,7 +294,7 @@ if (isset($_POST['update_profile'])) {
                     </div>
             </li>
          
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown"hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Contributions
                 </a>
@@ -303,7 +303,7 @@ if (isset($_POST['update_profile'])) {
                     <a class="dropdown-item" href="#">View Total Contributions</a>
                 </div>
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown" hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Loans
                 </a>
@@ -313,7 +313,7 @@ if (isset($_POST['update_profile'])) {
                     <a class="dropdown-item" href="#">Pay for loan</a>
                 </div>
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown"hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Penalties
                 </a>
@@ -323,7 +323,7 @@ if (isset($_POST['update_profile'])) {
                     <a class="dropdown-item" href="#">Pay Penalties</a>
                 </div>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" hidden>
                 <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
             </li>
         </ul>
@@ -335,7 +335,7 @@ if (isset($_POST['update_profile'])) {
                     <?php echo htmlspecialchars($user_name); ?>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" >
                 <a class="nav-link position-relative font-weight-bold text-white" href="#">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge"><?php echo $total_notifications; ?></span>
@@ -354,7 +354,6 @@ if (isset($_POST['update_profile'])) {
         </ul>
     </div>
 </nav>
-
 
 
     <!-- Profile Card -->

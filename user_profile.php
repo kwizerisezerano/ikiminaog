@@ -139,7 +139,7 @@ $total_notifications = 5;
                 </li>
               
                 </li>
-                <li class="nav-item dropdown">
+                <li class="nav-item dropdown" hidden>
                     <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Contributions
                     </a>
@@ -148,17 +148,17 @@ $total_notifications = 5;
                         <a class="dropdown-item" href="#">View Total Contributions</a>
                     </div>
                 </li>
-                <li class="nav-item dropdown">
+                <li class="nav-item dropdown" hidden>
                     <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Loans
                     </a>
-                    <div class="dropdown-menu" aria-labelledby="loansDropdown">
+                    <div class="dropdown-menu" aria-labelledby="loansDropdown" >
                         <a class="dropdown-item" href="#">View loan status</a>
                         <a class="dropdown-item" href="#">Apply for loan</a>
                         <a class="dropdown-item" href="#">Pay for loan</a>
                     </div>
                 </li>
-                <li class="nav-item dropdown">
+                <li class="nav-item dropdown" hidden  >
                     <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Penalties
                     </a>
@@ -168,7 +168,7 @@ $total_notifications = 5;
                         <a class="dropdown-item" href="#">Pay Penalties</a>
                     </div>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" hidden>
                     <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
                 </li>
             </ul>

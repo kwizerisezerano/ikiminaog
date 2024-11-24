@@ -139,7 +139,7 @@ $total_notifications = 5;
             </li>
             
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown"hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Contributions
                 </a>
@@ -148,7 +148,7 @@ $total_notifications = 5;
                     <a class="dropdown-item" href="#">View Total Contributions</a>
                 </div>
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown" hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Loans
                 </a>
@@ -158,7 +158,7 @@ $total_notifications = 5;
                     <a class="dropdown-item" href="#">Pay for loan</a>
                 </div>
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown"hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Penalties
                 </a>
@@ -168,7 +168,7 @@ $total_notifications = 5;
                     <a class="dropdown-item" href="#">Pay Penalties</a>
                 </div>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" hidden>
                 <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
             </li>
         </ul>
@@ -180,7 +180,7 @@ $total_notifications = 5;
                     <?php echo htmlspecialchars($user_name); ?>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" >
                 <a class="nav-link position-relative font-weight-bold text-white" href="#">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge"><?php echo $total_notifications; ?></span>
@@ -199,7 +199,6 @@ $total_notifications = 5;
         </ul>
     </div>
 </nav>
-
     <div class="container ">
         <h4 class="text-center">Tontines Joined by <?php echo $user_name; ?></h4>
         <div class="table-container">

@@ -391,9 +391,9 @@ body {
 
 
 </button>
-<button type="button" class="btn btn-outline-info btn-verification btn-action ">
+<!-- <button type="button" class="btn btn-outline-info btn-verification btn-action ">
         <a href="user_profile.php" class="text-blue"><i class="fas fa-bell "></i></a>
-    </button>
+    </button> -->
 
 </div>
 
