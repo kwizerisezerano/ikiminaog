@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 24, 2024 at 06:12 PM
+-- Generation Time: Nov 24, 2024 at 09:08 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -85,7 +85,7 @@ CREATE TABLE `loan_payments` (
 --
 
 INSERT INTO `loan_payments` (`id`, `user_id`, `loan_id`, `amount`, `payment_date`, `payment_status`, `transaction_ref`, `late_amount`, `tontine_id`, `phone_number`, `user_payment_date`) VALUES
-(20, 98, 17, 125.00, '2024-11-24', 'Pending', '0fcf9b6cd4bbdcf2d42e50c2c165c48c', 11.00, 59, '0790989830', '0000-00-00');
+(20, 98, 17, 125.00, '2024-11-24', 'Failure', '0fcf9b6cd4bbdcf2d42e50c2c165c48c', 11.00, 59, '0790989830', '0000-00-00');
 
 -- --------------------------------------------------------
 
@@ -486,7 +486,7 @@ CREATE TABLE `tontine` (
 
 INSERT INTO `tontine` (`id`, `tontine_name`, `logo`, `join_date`, `province`, `district`, `sector`, `total_contributions`, `occurrence`, `time`, `day`, `date`, `created_at`, `user_id`, `role`, `purpose`, `rules`, `status`, `reason`, `interest`, `payment_frequency`, `frequent_payment_date`, `frequent_payment_day`, `late_contribution_penalty`, `late_loan_repayment_amount`) VALUES
 (32, 'UBUMWE bwacu', 'uploads/6727e61ea7f83.png', '2024-11-03', 'Kigali', 'Gasabo', 'Rutunga', 600.00, 'Monthly', '00:00:00', '', '2024-11-03', '2024-11-03 21:07:42', 97, 'Admin', 'raise each other', 'contribute on time bro', 'Rejected', 'no', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
-(50, 'lycee de muhura', 'uploads/6731c84fa5e00.png', '2024-11-11', 'Kigali', 'Gasabo', 'Rutunga', 5.00, 'Monthly', '11:02:00', '', '2024-11-11', '2024-11-11 09:03:11', 98, 'Admin', 'rapid development through contributions and loans mine kkkkk', 'contribute on time', 'Justified', 'ok', 8.00, 'Weekly', '0000-00-00', 'Monday', 10, 0.00),
+(50, 'lycee de muhura', 'uploads/6731c84fa5e00.png', '2024-11-11', 'Kigali', 'Gasabo', 'Rutunga', 5.00, 'Monthly', '11:02:00', '', '2024-11-11', '2024-11-11 09:03:11', 98, 'Admin', 'rapid development through contributions and loans mine kkkkk', 'contribute on time kkkk', 'Justified', 'ok', 8.00, 'Weekly', '0000-00-00', 'Monday', 10, 0.00),
 (51, 'ISHUTI ZACU', 'uploads/6734a96b90ac1.png', '2024-11-13', 'Kigali', 'Gasabo', 'Remera', 1.00, 'Daily', '15:28:00', '', '0000-00-00', '2024-11-13 13:28:11', 97, 'Admin', '', '', 'Rejected', 'ok', 0.00, 'Monthly', NULL, NULL, 0, 0.00),
 (52, 'ok', 'uploads/673a0450dc821.png', '2024-11-17', 'Kigali', 'Gasabo', 'Rutunga', 900.00, 'Monthly', '16:57:00', '', '0000-00-00', '2024-11-17 14:57:20', 99, 'Admin', 'raise ecah other', 'contribute on time', 'Not Justified', '', 6.00, 'Monthly', '2024-11-17', 'Monday', 0, 0.00),
 (53, 'testing', 'uploads/673a0718706ce.png', '2024-11-17', 'East', 'Bugesera', 'Shyara', 5.00, 'Monthly', '17:09:00', '', '2024-11-17', '2024-11-17 15:09:12', 99, 'Admin', 'purpose', 'just us', 'Not Justified', '', 0.00, 'Monthly', NULL, NULL, 0, 0.00),

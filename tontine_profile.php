@@ -508,6 +508,9 @@ body {
     <button type="button" class="btn btn-info btn-sm rounded mt-1">
         <a class="text-white "style="text-decoration:none;" href="paid_loan_list_admin.php?id=<?php echo $id; ?>">paid loans</a>
     </button>
+      <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="members_list.php?id=<?php echo $id; ?>">Members List</a>
+    </button>
    
     
 </form>
