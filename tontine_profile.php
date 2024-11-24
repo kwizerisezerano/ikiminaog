@@ -505,6 +505,10 @@ body {
        <button type="button" class="btn btn-info btn-sm rounded mt-1">
         <a class="text-white "style="text-decoration:none;" href="paid_missed_penalties.php?id=<?php echo $id; ?>">Paid missed penaltiess</a>
     </button>
+      <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href=" loan_list.php?id=<?php echo $id; ?>">Paid loans</a>
+    </button>
+   
     
 </form>
 
