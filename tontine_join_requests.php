@@ -59,7 +59,7 @@ try {
 
         // Fetch join requests
         $stmt = $pdo->prepare("
-            SELECT tjr.reason, tjr.id, tjr.number_place, tjr.amount, tjr.payment_method, tjr.status, 
+            SELECT tjr.reason,tjr.payment_status , tjr.id, tjr.number_place, tjr.amount, tjr.payment_method, tjr.status, 
                    tjr.request_date, tjr.terms, tjr.transaction_ref, t.tontine_name, 
                    u.firstname, u.lastname
             FROM tontine_join_requests tjr
@@ -129,19 +129,89 @@ $total_applications = array_sum($status_counts);
     </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+ <!-- Navbar -->
+ <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ml-auto">
+       
+        <ul class="navbar-nav mr-auto">
             <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Tontine
+                </a>
+                <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
+                        <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
+                        <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
+                     
+                        <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
+                    </div>
+            </li>
+           
+            <li class="nav-item dropdown"hidden>
+                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Contributions
+                </a>
+                <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
+                    <a class="dropdown-item" href="#">Send contributions</a>
+                    <a class="dropdown-item" href="#">View Total Contributions</a>
+                </div>
+            </li>
+            <li class="nav-item dropdown" hidden>
+                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Loans
+                </a>
+                <div class="dropdown-menu" aria-labelledby="loansDropdown">
+                    <a class="dropdown-item" href="#">View loan status</a>
+                    <a class="dropdown-item" href="#">Apply for loan</a>
+                    <a class="dropdown-item" href="#">Pay for loan</a>
+                </div>
+            </li>
+            <li class="nav-item dropdown"hidden>
+                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Penalties
+                </a>
+                <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
+                    <a class="dropdown-item" href="#">View Paid Penalties</a>
+                    <a class="dropdown-item" href="#">View Unpaid Penalties</a>
+                    <a class="dropdown-item" href="#">Pay Penalties</a>
+                </div>
+            </li>
+            <li class="nav-item" hidden>
                 <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
             </li>
         </ul>
+
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white" href="#">
+                    <i class="fas fa-user"></i> 
+                    <?php echo htmlspecialchars($user_name); ?>
+                </a>
+            </li>
+            <li class="nav-item" >
+                <a class="nav-link position-relative font-weight-bold text-white" href="#">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge"><?php echo $total_notifications; ?></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white" href="setting.php">
+                    <i class="fas fa-cog"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white" href="#" onclick="confirmLogout()">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </a>
+            </li>
+        </ul>
     </div>
-  </nav>
+</nav>
 
 <div class="container">
     <div class="text-center">
@@ -161,7 +231,10 @@ $total_applications = array_sum($status_counts);
                     <thead class="thead-dark">
                         <tr>
                             <th>ID</th>
+                            <th>No of Place</th>
+                            <th>Amount</th>
                             <th>Payment Method</th>
+                            <th>Payment Status</th>
                             <th>Status</th>
                             <th>Reason</th>
                             <th>Request Date</th>
@@ -172,11 +245,18 @@ $total_applications = array_sum($status_counts);
                         <?php foreach ($requests as $request): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($request['id']); ?></td>
-                                <td><?php echo htmlspecialchars($request['payment_method']); ?></td>
+                                <td><?php echo htmlspecialchars($request['number_place']); ?></td>
+                                <td><?php echo htmlspecialchars($request['amount']); ?></td>
+                                  <td><?php echo htmlspecialchars($request['payment_method']); ?></td>
+                                <td><?php echo htmlspecialchars($request['payment_status']); ?></td>                              
+                              
                                 <td><?php echo htmlspecialchars($request['status']); ?></td>
                                 <td><?php echo htmlspecialchars($request['reason']); ?></td>
                                 <td><?php echo htmlspecialchars($request['request_date']); ?></td>
                                 <td>
+                                     <button type="button" class="btn btn-info btn-sm rounded mt-1">
+                                     <a href="view_request.php?id=<?php echo $request['id']; ?>" class="btn btn-info btn-sm">View</a>
+    </button>
                                 <button class="btn btn-danger refund-request-btn" 
         data-id="<?php echo htmlspecialchars($request['id']); ?>" 
         data-user="<?php echo $user_id ;?>" 
