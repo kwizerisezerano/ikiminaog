@@ -86,13 +86,13 @@ if (!defined('hdev_sms')) {
     }
   }
   
-// hdev_sms::api_id("HDEV-d00e779c-0336-4743-aaa4-9c5091c530e9-ID");
-// hdev_sms::api_key("HDEV-d4e1bbec-017d-495e-80e9-a8cf4d615ee9-KEY");
+hdev_sms::api_id("HDEV-d00e779c-0336-4743-aaa4-9c5091c530e9-ID");
+hdev_sms::api_key("HDEV-d4e1bbec-017d-495e-80e9-a8cf4d615ee9-KEY");
 
 
 
-hdev_sms::api_id("HDEV-4d5eaa39-b056-4be1-af82-aa067ec5d914-ID");
-hdev_sms::api_key("HDEV-9b832336-d5fd-4823-8db3-8f2a0407d7b7-KEY");
+// hdev_sms::api_id("HDEV-4d5eaa39-b056-4be1-af82-aa067ec5d914-ID");
+// hdev_sms::api_key("HDEV-9b832336-d5fd-4823-8db3-8f2a0407d7b7-KEY");
 
 }
 ?>

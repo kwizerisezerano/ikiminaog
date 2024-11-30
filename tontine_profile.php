@@ -374,9 +374,9 @@ body {
 <button type="button" class="btn btn-outline-info text-primary btn-delete" onclick="confirmDelete()">
     <i class="fas fa-trash-alt"></i> 
 </button>
-<button type="button" class="btn btn-outline-info text-primary btn-verification">
+<!-- <button type="button" class="btn btn-outline-info text-primary btn-verification">
         <a href="user_profile.php" class="text-white"><i class="fas fa-bell text-primary"></i></a>
-    </button>
+    </button> -->
 
 </div>
 
@@ -509,7 +509,7 @@ body {
         <a class="text-white "style="text-decoration:none;" href="paid_loan_list_admin.php?id=<?php echo $id; ?>">paid loans</a>
     </button>
       <button type="button" class="btn btn-info btn-sm rounded mt-1">
-        <a class="text-white "style="text-decoration:none;" href="members_list.php?id=<?php echo $id; ?>">Members List</a>
+        <a class="text-white "style="text-decoration:none;" href="report.php?id=<?php echo $id; ?>">Report</a>
     </button>
    
     

@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // Fetch user details
-$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image,idno,behalf_name,behalf_phone_number ,idno_picture,otp_behalf_used FROM users WHERE id = :id");
+$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image, idno, behalf_name, behalf_phone_number, idno_picture, otp_behalf_used FROM users WHERE id = :id");
 $stmt->bindParam(':id', $user_id);
 $stmt->execute();
 
@@ -22,11 +22,12 @@ if (!$user) {
     exit();
 }
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
+
 // Get tontine ID from the URL
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 // Fetch tontine details
-$stmt = $pdo->prepare("SELECT tontine_name FROM tontine WHERE id = :id");
+$stmt = $pdo->prepare("SELECT * FROM tontine WHERE id = :id");
 $stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
 $stmt->execute();
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -36,37 +37,81 @@ if (!$tontine) {
     die("Tontine not found.");
 }
 
-// Get the total contributions for calculation
-// $total_contributions = $tontine['interest'];
+// Get summary statistics for the specific tontine
 
-// Notification count
+// Total users who joined the Tontine
+$stmt = $pdo->prepare("SELECT COUNT(*) AS total_users FROM tontine_join_requests WHERE tontine_id = :tontine_id AND status = 'Permitted'");
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->execute();
+$total_users = $stmt->fetchColumn();
+
+// Total contributions (sum of the 'amount' field)
+$stmt = $pdo->prepare("SELECT SUM(amount) AS total_contributions FROM contributions WHERE tontine_id = :tontine_id AND payment_status='Approved'");
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->execute();
+$total_contributions = $stmt->fetchColumn();
+
+// Total loan requests (approved)
+$stmt = $pdo->prepare("SELECT SUM(loan_amount) AS total_loan_requests FROM loan_requests WHERE tontine_id = :tontine_id AND status = 'Approved'");
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->execute();
+$total_loan_requests = $stmt->fetchColumn();
+
+// Total loan payments (approved)
+$stmt = $pdo->prepare("SELECT SUM(amount) AS total_loan_payments FROM loan_payments WHERE tontine_id = :tontine_id AND payment_status = 'Approved'");
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->execute();
+$total_loan_payments = $stmt->fetchColumn();
+
+// Missed contributions that are unpaid
+$stmt = $pdo->prepare("SELECT COUNT(*) AS unpaid_missed_contributions FROM missed_contribution_payment WHERE tontine_id = :tontine_id AND payment_status = 'Failure' OR payment_status = 'Pending' ");
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->execute();
+$unpaid_missed_contributions = $stmt->fetchColumn();
+
+// Missed contributions that are paid
+$stmt = $pdo->prepare("SELECT COUNT(*) AS paid_missed_contributions FROM missed_contributions WHERE tontine_id = :tontine_id AND status = 'Paid'");
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->execute();
+$paid_missed_contributions = $stmt->fetchColumn();
+
+// Calculate total dividends (example calculation, could be based on contributions)
+$dividend_percentage = 0.1; // 10% dividend (for example)
+$total_dividends = $total_contributions * $dividend_percentage; // Adjust the formula as needed
+
+// Total notifications (as an example)
 $total_notifications = 5;
 
- // Prepare and execute the query
-        $stmt = $pdo->prepare("SELECT amount FROM tontine_join_requests WHERE tontine_id = :tontine_id AND user_id = :user_id");
-        $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
-        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-        $stmt->execute();
-
-        // Fetch the result
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join <?php echo htmlspecialchars($tontine['tontine_name']); ?> - Ikimina MIS</title>
-  <!-- Font Awesome (only one version needed) -->
+    <title>Profile Page</title>
+      <!-- Font Awesome (only one version needed) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<!-- Bootstrap 5 (the latest version is recommended) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <!-- jQuery (for Bootstrap 4/5) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <!-- Bootstrap 4 Bundle (you can remove this if you only want to use Bootstrap 5) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-     <style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        
+   
+
         .notification-badge {
             position: absolute;
             top: -5px;
@@ -77,49 +122,14 @@ $total_notifications = 5;
             padding: 2px 5px;
             font-size: 0.80rem;
         }
-        /* Custom CSS */
-        body {
-            background-color: #d6dce5;
-            font-family: Arial, sans-serif;
-            margin: 0;
-        }
-        .form-container {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            margin: 60px auto 0; /* Adds space below the navbar */
-        }
-        .form-title {
-            color: #007bff;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .form-section {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .btn-submit {
-            width: 100%;
-            background-color: #007bff;
-            color: #fff;
-            font-weight: bold;
-            border: none;
-        }
-        .btn-submit:hover {
-            background-color: #0056b3;
-        }
-        .form-check-label {
-            font-size: 0.9rem;
-        }
+
+        
     </style>
 </head>
 <body>
-     <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+
+ <!-- Navbar -->
+ <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -140,8 +150,9 @@ $total_notifications = 5;
                         <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
                     </div>
             </li>
-          
-            <li class="nav-item dropdown">
+            
+            </li>
+            <li class="nav-item dropdown"hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Contributions
                 </a>
@@ -150,7 +161,7 @@ $total_notifications = 5;
                     <a class="dropdown-item" href="#">View Total Contributions</a>
                 </div>
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown" hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Loans
                 </a>
@@ -160,7 +171,7 @@ $total_notifications = 5;
                     <a class="dropdown-item" href="#">Pay for loan</a>
                 </div>
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown"hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Penalties
                 </a>
@@ -170,7 +181,7 @@ $total_notifications = 5;
                     <a class="dropdown-item" href="#">Pay Penalties</a>
                 </div>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" hidden>
                 <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
             </li>
         </ul>
@@ -182,7 +193,7 @@ $total_notifications = 5;
                     <?php echo htmlspecialchars($user_name); ?>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item" >
                 <a class="nav-link position-relative font-weight-bold text-white" href="#">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge"><?php echo $total_notifications; ?></span>
@@ -202,80 +213,25 @@ $total_notifications = 5;
     </div>
 </nav>
 
-<div class="form-container mt-3">
-    <h5 class="form-title">Welcome to Update loan penalty amount for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
-    
-    <form id="joinForm" method="POST">
-    <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
-
-    <!-- Existing form fields -->
-
-    <!-- Interest -->
-    <div class="mb-3">
-        <label for="interest" class="form-label">Amount</label>
-        <input type="number" class="form-control" id="interest" name="interest" step="0.01" value="">
+<div class="container">
+    <div class="card-custom">
+        <h2 class="text-center">Detailed Report for Tontine: <?php echo htmlspecialchars($tontine['tontine_name']); ?></h2>
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="list-group">
+                    <li class="list-group-item"><strong>User ID:</strong> <?php echo $user_id; ?></li>
+                    <li class="list-group-item"><strong>Username:</strong> <?php echo $user_name; ?></li>
+                    <li class="list-group-item"><strong>Total Approved Contributions:</strong> <?php echo number_format($total_contributions, 2); ?></li>
+                    <li class="list-group-item"><strong>Total Approved Loan Requests:</strong> <?php echo number_format($total_loan_requests, 2); ?></li>
+                    <li class="list-group-item"><strong>Total Unpaid Missed Contributions:</strong> <?php echo $unpaid_missed_contributions; ?></li>
+                    <li class="list-group-item"><strong>Total Paid Missed Contributions:</strong> <?php echo $paid_missed_contributions; ?></li>
+                    <li class="list-group-item"><strong>Total Approved Loan Payments:</strong> <?php echo number_format($total_loan_payments, 2); ?></li>
+                    <li class="list-group-item"><strong>Total Dividends (Estimated 10%):</strong> <?php echo number_format($total_dividends, 2); ?></li>
+                </ul>
+            </div>
+        </div>
     </div>
-
-
-    <button type="submit" class="btn btn-submit">Update Penalty</button>
-</form>
 </div>
 
-<script>
-
-
-    $('#joinForm').on('submit', function(e) {
-    e.preventDefault();
-
-    var interest = $('#interest').val();
-    if (interest < 0) {
-        Swal.fire('Error', 'Interest cannot be negative.', 'error');
-        return;
-    }
-
-    $.ajax({
-        url: 'submit_contribution_update.php',
-        type: 'POST',
-        data: $(this).serialize(),
-        success: function(response) {
-            const res = JSON.parse(response);
-            Swal.fire({
-                title: res.title,
-                text: res.message,
-                icon: res.status === 'success' ? 'success' : 'error',
-            }).then(() => {
-                if (res.status === 'success' && res.redirect_to) {  // Change res.redirect to res.redirect_to
-                    window.location.href = res.redirect_to;  // Use res.redirect_to instead of res.redirect
-                }
-            });
-        },
-        error: function() {
-            Swal.fire({
-                title: 'Server Error',
-                text: 'Please try again later.',
-                icon: 'error',
-            });
-        }
-    });
-});
-
-
-
-    function confirmLogout() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'Do you want to log out?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, log out',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = 'logout.php';
-            }
-        });
-    }
-
-</script>
 </body>
 </html>

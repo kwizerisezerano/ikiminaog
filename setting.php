@@ -85,168 +85,105 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-// Check if the form is submitted for updating the profile
-if (isset($_POST['update_profile'])) {
-    // Trim input data
-    $new_first_name = trim($_POST['first_name']);
-    $new_last_name = trim($_POST['last_name']);
-    $new_phone_number = trim($_POST['phone_number']);
-    $idno = trim($_POST['idno']);
-    $idno_type = $_POST['idnotype'];
-    $on_behalf_name = trim($_POST['on_behalf_name']);
-    $on_behalf_contact = trim($_POST['on_behalf_contact']);
-    $idno_picture = null;
-
-    // Check if the file is uploaded for IDNO picture
-    if (isset($_FILES['idno_picture']) && $_FILES['idno_picture']['error'] == 0) {
-        // Get file details
-        $file_name = $_FILES['idno_picture']['name'];
-        $file_tmp_name = $_FILES['idno_picture']['tmp_name'];
-        $file_size = $_FILES['idno_picture']['size'];
-        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-        // Allowed file extensions
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-
-        // Check the file extension and size
-        if (in_array($file_extension, $allowed_extensions)) {
-            if ($file_size <= 5 * 1024 * 1024) {
-                $new_file_name = uniqid('idno_', true) . '.' . $file_extension;
-                $upload_dir = 'uploads/';
-                $target_file = $upload_dir . $new_file_name;
-
-                // Move the uploaded file to the target directory
-                if (move_uploaded_file($file_tmp_name, $target_file)) {
-                    $idno_picture = $target_file;
-                } else {
-                    $errors[] = "Error uploading the file. Please try again.";
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
+        // Trim input data
+        $new_first_name = trim($_POST['first_name']);
+        $new_last_name = trim($_POST['last_name']);
+        $new_phone_number = trim($_POST['phone_number']);
+        $idno = trim($_POST['idno']);
+        $idno_type = $_POST['idnotype'];
+        $on_behalf_name = trim($_POST['on_behalf_name']);
+        $on_behalf_contact = trim($_POST['on_behalf_contact']);
+        $idno_picture = null; // Update with file upload logic if needed
+    
+        $user_id = $_SESSION['user_id']; // Get logged-in user's ID
+    
+        try {
+            // Retrieve the current phone number for the logged-in user
+            $stmt = $pdo->prepare("SELECT phone_number FROM users WHERE id = :id");
+            $stmt->bindParam(':id', $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $current_phone_number = $stmt->fetchColumn();
+    
+            // Initialize an array to collect errors
+            $errors = [];
+    
+            // Check if the new phone number is different
+            if ($new_phone_number !== $current_phone_number) {
+                // Check for duplicate phone numbers
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE phone_number = :phone_number AND id != :id");
+                $stmt->bindParam(':phone_number', $new_phone_number, PDO::PARAM_STR);
+                $stmt->bindParam(':id', $user_id, PDO::PARAM_INT);
+                $stmt->execute();
+    
+                if ($stmt->fetchColumn() > 0) {
+                    $errors[] = "The phone number is already registered to another user.";
+                }
+    
+                // Proceed with the update if no errors
+                if (empty($errors)) {
+                    $stmt = $pdo->prepare("UPDATE users SET
+                        firstname = :firstname,
+                        lastname = :lastname,
+                        phone_number = :phone_number,
+                        idno = :idno,
+                        idnotype = :idnotype,
+                        idno_picture = :idno_picture,
+                        behalf_name = :behalf_name,
+                        behalf_phone_number = :behalf_phone_number
+                        WHERE id = :id");
+    
+                    $stmt->bindParam(':firstname', $new_first_name, PDO::PARAM_STR);
+                    $stmt->bindParam(':lastname', $new_last_name, PDO::PARAM_STR);
+                    $stmt->bindParam(':phone_number', $new_phone_number, PDO::PARAM_STR);
+                    $stmt->bindParam(':idno', $idno, PDO::PARAM_STR);
+                    $stmt->bindParam(':idnotype', $idno_type, PDO::PARAM_STR);
+                    $stmt->bindParam(':idno_picture', $idno_picture, PDO::PARAM_NULL);
+                    $stmt->bindParam(':behalf_name', $on_behalf_name, PDO::PARAM_STR);
+                    $stmt->bindParam(':behalf_phone_number', $on_behalf_contact, PDO::PARAM_STR);
+                    $stmt->bindParam(':id', $user_id, PDO::PARAM_INT);
+    
+                    if ($stmt->execute()) {
+                        // Generate OTP
+                        $otp = random_int(100000, 999999);
+    
+                        // Update OTP in the database
+                        $stmt = $pdo->prepare("UPDATE users SET otp_behalf = :otp WHERE behalf_phone_number = :behalf_phone_number");
+                        $stmt->bindParam(':otp', $otp, PDO::PARAM_INT);
+                        $stmt->bindParam(':behalf_phone_number', $on_behalf_contact, PDO::PARAM_STR);
+                        $stmt->execute();
+    
+                        // Prepare and send OTP message
+                        $otpMessage = "
+                            Dear $on_behalf_name,
+                            You are receiving this message on behalf of $new_first_name $new_last_name.
+                            Your OTP for verifying the account is: $otp.
+                            Please use this code to activate the account or click the link below:
+                            http://192.168.43.246/ikimina/onbehalf_otp_verify.php?phone_number=" . urlencode($on_behalf_contact) . "&otp=" . urlencode($otp);
+    
+                        hdev_sms::send('N-SMS', $on_behalf_contact, $otpMessage);
+    
+                        // Redirect to OTP verification page
+                        header("Location: onbehalf_otp_verify.php?phone_number=" . urlencode($on_behalf_contact));
+                        exit;
+                    } else {
+                        $errors[] = "Failed to update profile in the database.";
+                    }
                 }
             } else {
-                $errors[] = "File size exceeds the allowed limit of 5MB.";
+                $errors[] = "No changes detected in the phone number.";
             }
-        } else {
-            $errors[] = "Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.";
+    
+            // Display errors if any
+            if (!empty($errors)) {
+                echo "<script>alert('" . implode("\\n", $errors) . "');</script>";
+            }
+        } catch (PDOException $e) {
+            echo "<script>alert('An unexpected error occurred: " . addslashes($e->getMessage()) . "');</script>";
         }
     }
-
-    // Validate required fields
-    if (empty($new_first_name) || empty($new_last_name) || empty($new_phone_number) || empty($idno) || empty($on_behalf_name) || empty($on_behalf_contact)) {
-        $errors[] = "All fields are required.";
-    }
-
-    // Validate names
-    if (!preg_match("/^[a-zA-Z ]+$/", $new_first_name)) {
-        $errors[] = "First name must contain only letters and spaces.";
-    }
-    if (!preg_match("/^[a-zA-Z ]+$/", $new_last_name)) {
-        $errors[] = "Last name must contain only letters and spaces.";
-    }
-
-    // Validate phone number
-    if (!preg_match("/^\d{10,15}$/", $new_phone_number)) {
-        $errors[] = "Phone number must contain digits only and be between 10 and 15 digits.";
-    }
-
-    // Validate IDNO based on type
-    if ($idno_type === "Rwandan" && strlen($idno) !== 16) {
-        $errors[] = "Rwandan National ID must be exactly 16 characters.";
-    } elseif ($idno_type === "Foreign" && !preg_match("/^\d+$/", $idno)) {
-        $errors[] = "Foreign IDNO must contain only digits.";
-    }
-
-    // Validate on behalf name and contact number
-    if (!preg_match("/^[a-zA-Z ]+$/", $on_behalf_name)) {
-        $errors[] = "On behalf name must contain only letters and spaces.";
-    }
-    if (!preg_match("/^\d{10,15}$/", $on_behalf_contact)) {
-        $errors[] = "On behalf contact must contain digits only and be between 10 and 15 digits.";
-    }
-
-    // Check for duplicate entries (phone number, IDNO)
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE phone_number = :phone_number AND id != :id");
-    $stmt->bindParam(':phone_number', $new_phone_number);
-    $stmt->bindParam(':id', $_SESSION['user_id']);
-    $stmt->execute();
-    if ($stmt->fetchColumn() > 0) {
-        $errors[] = "The phone number is already registered to another user.";
-    }
-
-    // Proceed with the update if no errors
-    if (empty($errors)) {
-        $user_id = $_SESSION['user_id'];
-
-        // Prepare the SQL statement to update the user profile
-        $stmt = $pdo->prepare("UPDATE users SET
-            firstname = :firstname,
-            lastname = :lastname,
-            phone_number = :phone_number,
-            idno = :idno,
-            idnotype = :idnotype,
-            idno_picture = :idno_picture,
-            behalf_name = :behalf_name,
-            behalf_phone_number = :behalf_phone_number
-            WHERE id = :id");
-
-        $stmt->bindParam(':firstname', $new_first_name);
-        $stmt->bindParam(':lastname', $new_last_name);
-        $stmt->bindParam(':phone_number', $new_phone_number);
-        $stmt->bindParam(':idno', $idno);
-        $stmt->bindParam(':idnotype', $idno_type);
-        $stmt->bindParam(':idno_picture', $idno_picture);
-        $stmt->bindParam(':behalf_name', $on_behalf_name);
-        $stmt->bindParam(':behalf_phone_number', $on_behalf_contact);
-        $stmt->bindParam(':id', $user_id);
-
-        // Execute the update
-        if ($stmt->execute()) {
-            // OTP generation and SMS sending function
-            function generateOTP($length = 6) {
-                return random_int(100000, 999999);
-            }
-
-            function sendMessage($phoneNumber, $message) {
-                hdev_sms::send('N-SMS', $phoneNumber, $message);
-            }
-
-            // Generate OTP
-            $otp = generateOTP();
-
-            // Update OTP in the database
-            $stmt = $pdo->prepare("UPDATE users SET otp_behalf = :otp WHERE phone_number = :phone_number");
-            $stmt->bindParam(':otp', $otp);
-            $stmt->bindParam(':phone_number', $on_behalf_contact);
-            $stmt->execute();
-
-            // OTP message content
-            $otpMessage = "
-                Dear $on_behalf_name,
-                You are receiving this message on behalf of $new_first_name $new_last_name.
-                Your OTP for verifying the account is: $otp.
-                Please use this code to activate the account or click the link below:
-                http://192.168.43.246/ikimina/onbehalf_otp_verify.php?phone_number=" . urlencode($on_behalf_contact) . "&otp=" . urlencode($otp);
-            
-            // Send the OTP via SMS
-            sendMessage($on_behalf_contact, $otpMessage);
-
-            // Redirect to OTP verification page
-            header("Location: onbehalf_otp_verify.php?phone_number=" . urlencode($on_behalf_contact));
-            exit;
-        } else {
-            $errors[] = "Failed to update profile in the database.";
-        }
-    }
-
-    // Display any errors
-    if (!empty($errors)) {
-        echo '<script>';
-        echo 'var errors = ' . json_encode($errors) . ';';
-        echo 'if (errors.length > 0) { alert(errors.join("\\n")); }';
-        echo '</script>';
-    }
 }
-
-}
-?>
+    ?>
 
 <!DOCTYPE html>
 <html lang="en">

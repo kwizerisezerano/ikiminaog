@@ -48,7 +48,8 @@ if (!$sectorExists) {
 }
 
 // Fetch tontine details including the logo
-$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status,interest, payment_frequency ,frequent_payment_date,frequent_payment_day FROM tontine WHERE id = :id");
+// Fetch tontine details including the logo
+$stmt = $pdo->prepare("SELECT tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, user_id,rules,purpose,status,interest, payment_frequency ,frequent_payment_date,frequent_payment_day,late_contribution_penalty,late_loan_repayment_amount  FROM tontine WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -455,9 +456,10 @@ body {
 
         <div class="section-item mb-1 pb-1">
             <h6 class="text-info">Penalties</h6>
-            <p><strong>Late Fee:</strong> 100 RWF per day</p>
-            <p><strong>Missed Contributions:</strong> Subject to review</p>
-        </div>
+            <p><strong> Contribution Late Amount:</strong> <?php echo $tontine['late_contribution_penalty']; ?> RWF per 1 place</p>
+
+            <p><strong> Late Loan Repayment Amount:</strong> <?php echo $tontine['late_loan_repayment_amount']; ?> RWF per 1 place</p>
+        </div
     </div>
 <!-- Purpose & Rules Section -->
 <div class="about-section border-bottom mb-1 pb-1">
@@ -506,6 +508,12 @@ body {
     </button>
      <button type="button" class="btn btn-info btn-sm rounded mt-1">
         <a class="text-white "style="text-decoration:none;" href="paid_loan_list.php?id=<?php echo $id; ?>">paid loans</a>
+    </button>
+    <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="report_member.php?id=<?php echo $id; ?>">Member Report</a>
+    </button>
+     <button type="button" class="btn btn-info btn-sm rounded mt-1">
+        <a class="text-white "style="text-decoration:none;" href="contribution_dates_admin.php?id=<?php echo $id; ?>">Contribution dates  </a>
     </button>
 <!-- Include SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
