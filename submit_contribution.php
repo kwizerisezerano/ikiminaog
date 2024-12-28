@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         }
 
         if ($result['join_status'] !== 'Permitted' || $result['tontine_status'] !== 'Justified') {
-            throw new Exception('Invalid tontine status.');
+            throw new Exception('tontine is not registered by sector .');
         }
 
         // Generate contribution dates
