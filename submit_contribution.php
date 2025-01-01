@@ -70,6 +70,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         $today = (new DateTime())->format('Y-m-d');
         $past_dates = array_filter($dates, fn($date) => $date < $today);
 
+        // Check if the contribution date already exists in contributions or missed contributions
+        $contribution_date = date('Y-m-d');
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) 
+            FROM contributions c
+            WHERE c.user_id = :user_id AND c.tontine_id = :tontine_id 
+            AND DATE(c.contribution_date) = :contribution_date
+            UNION ALL
+            SELECT COUNT(*) 
+            FROM missed_contributions mc 
+            WHERE mc.user_id = :user_id AND mc.tontine_id = :tontine_id 
+            AND DATE(mc.missed_date) = :contribution_date
+            UNION ALL
+            SELECT COUNT(*) 
+            FROM penalties p
+            WHERE p.user_id = :user_id AND p.tontine_id = :tontine_id 
+            AND DATE(p.missed_contribution_date) = :contribution_date
+        ");
+        $stmt->execute([
+            'user_id' => $user_id,
+            'tontine_id' => $tontine_id,
+            'contribution_date' => $contribution_date,
+        ]);
+
+        $contributionExists = array_sum($stmt->fetchAll(PDO::FETCH_COLUMN));
+
+        if ($contributionExists > 0) {
+            // Insert directly into contributions if the date exists in contributions, missed contributions, or penalties
+            $transaction_ref = bin2hex(random_bytes(16));
+            $stmt = $pdo->prepare("INSERT INTO contributions (user_id, tontine_id, amount, payment_method, transaction_ref, contribution_date, payment_status)
+                                   VALUES (:user_id, :tontine_id, :amount, :payment_method, :transaction_ref, NOW(), 'Pending')");
+            $stmt->execute([
+                'user_id' => $user_id,
+                'tontine_id' => $tontine_id,
+                'amount' => $amount,
+                'payment_method' => $payment_method,
+                'transaction_ref' => $transaction_ref,
+            ]);
+
+            $pdo->commit();
+
+            echo json_encode([
+                'status' => 'success',
+                'title' => 'Contribution Recorded',
+                'message' => 'Your contribution has been successfully recorded.',
+            ]);
+            exit();
+        }
+
+        // If no matching contribution, missed contribution or penalty exists, continue with missed contributions and penalties logic
+
         $stmt = $pdo->prepare("SELECT contribution_date FROM contributions 
                                WHERE user_id = :user_id AND tontine_id = :tontine_id");
         $stmt->execute(['user_id' => $user_id, 'tontine_id' => $tontine_id]);
@@ -90,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
                     $penalty_amount = $result['late_contribution_penalty'];
                     $stmt = $pdo->prepare("INSERT INTO penalties (user_id, tontine_id, penalty_amount, infraction_date, reason, missed_contribution_date)
                                            VALUES (:user_id, :tontine_id, :penalty_amount, NOW(), 'Missed contributions', :missed_date)");
-                    $stmt->execute([
+                    $stmt->execute([ 
                         'user_id' => $user_id,
                         'tontine_id' => $tontine_id,
                         'penalty_amount' => $penalty_amount,
@@ -118,32 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             }
         }
 
-        // Contribution validation
-        $contribution_date = date('Y-m-d');
-        if (!in_array($contribution_date, $dates)) {
-            throw new Exception('Contribution date is not valid. It might be too early or too late for this contribution.');
-        }
-
-        // Prevent duplicate contributions based on date (ignoring time)
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM contributions 
-                               WHERE user_id = :user_id 
-                               AND tontine_id = :tontine_id 
-                               AND DATE(contribution_date) = :contribution_date");
-        $stmt->execute([
-            'user_id' => $user_id,
-            'tontine_id' => $tontine_id,
-            'contribution_date' => $contribution_date,
-        ]);
-
-        if ($stmt->fetchColumn() > 0) {
-            echo json_encode([
-                'status' => 'error',
-                'title' => 'Duplicate Record',
-                'message' => 'A contribution for this date already exists. Please check your records.',
-            ]);
-            exit();
-        }
-
         // Payment processing
         $transaction_ref = bin2hex(random_bytes(16));
         $pay = hdev_payment::pay($payment_method, $amount, $transaction_ref, '');
@@ -166,12 +191,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
 
         echo json_encode([
             'status' => 'success',
-            'title' => 'Contribution Successful',
-            'message' => 'Your contribution has been recorded and payment processed.',
+            'title' => 'Contribution Recorded',
+            'message' => 'Your contribution has been successfully recorded.',
         ]);
     } catch (Exception $e) {
         $pdo->rollBack();
-        error_log($e->getMessage());
         echo json_encode([
             'status' => 'error',
             'title' => 'Error',
