@@ -63,7 +63,7 @@ if (!$result || empty($result['amount'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join <?php echo htmlspecialchars($tontine['tontine_name']); ?> - Ikimina MIS</title>
+    <title>Contribute-<?php echo htmlspecialchars($tontine['tontine_name']); ?> - Ikimina MIS</title>
   <!-- Font Awesome (only one version needed) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <!-- SweetAlert2 -->
@@ -210,7 +210,7 @@ if (!$result || empty($result['amount'])) {
 </nav>
 
 <div class="form-container mt-3">
-    <h5 class="form-title">Welcome to Join <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
+    <h5 class="form-title">Welcome to Contribute in <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
     
     <form id="joinForm" method="POST">
         <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
@@ -229,7 +229,7 @@ if (!$result || empty($result['amount'])) {
 
        
 
-        <button type="submit" class="btn btn-submit" id="submitBtn" >Submit Join Request</button>
+        <button type="submit" class="btn btn-submit" id="submitBtn" >Send Contribution</button>
     </form>
 </div>
 

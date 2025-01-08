@@ -69,7 +69,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Contributions</title>
+    <title>Your missed  Contributions</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -163,25 +163,28 @@ try {
         <h1 class="text-center">Your Missed Contributions for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
         <?php if (!empty($contributions)): ?>
             <table class="table table-bordered table-striped">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Payment Status</th>
-                     
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($contributions as $contribution): ?>
-                        <tr>
-                            <td><?php echo date('Y-m-d', strtotime($contribution['missed_date'])); ?></td>
-                            <td><?php echo number_format($contribution['missed_amount'], 2); ?></td>
-                            <td><?php echo htmlspecialchars($contribution['status']); ?></td>
-                         
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+    <thead class="thead-dark">
+        <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Payment Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php 
+        $counter = ($page - 1) * $perPage + 1; // Start counting based on pagination
+        foreach ($contributions as $contribution): 
+        ?>
+            <tr>
+                <td><?php echo $counter++; ?></td> <!-- Increment the counter -->
+                <td><?php echo date('Y-m-d', strtotime($contribution['missed_date'])); ?></td>
+                <td><?php echo number_format($contribution['missed_amount'], 2); ?></td>
+                <td><?php echo htmlspecialchars($contribution['status']); ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
 
             <!-- Pagination -->
             <?php

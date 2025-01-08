@@ -165,6 +165,7 @@ try {
             <table class="table table-bordered table-striped">
                 <thead class="thead-dark">
                     <tr>
+                        <th>ID</th>
                         <th>Infraction Date</th>
                         <th>Penaly Amount</th>
                         <th>Reason</th>
@@ -173,8 +174,12 @@ try {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($contributions as $contribution): ?>
-                        <tr>
+                <?php 
+        $counter = ($page - 1) * $perPage + 1; // Start counting based on pagination
+        foreach ($contributions as $contribution): 
+        ?>
+            <tr>
+                <td><?php echo $counter++; ?></td> <!-- Increment the counter -->
                             <td><?php echo date('Y-m-d', strtotime($contribution['infraction_date'])); ?></td>
                             <td><?php echo number_format($contribution['penalty_amount'], 2); ?></td>
                             <td><?php echo htmlspecialchars($contribution['reason']); ?></td>

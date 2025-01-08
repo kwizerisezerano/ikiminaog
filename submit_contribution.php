@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             INNER JOIN tontine t ON tjr.tontine_id = t.id
             WHERE tjr.user_id = :user_id AND tjr.tontine_id = :tontine_id
         ");
-        $stmt->execute(['user_id' => $user_id, 'tontine_id' => $tontine_id]);
+        $stmt->execute(['user_id' => $user_id, 'tontine_id' => $tontine_id]); 
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$result) {
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         }
 
         if ($result['join_status'] !== 'Permitted' || $result['tontine_status'] !== 'Justified') {
-            throw new Exception('tontine is not registered by sector .');
+            throw new Exception('tontine is not registered by sector or You are not Permitted by Admin of this tontine .');
         }
 
         // Generate contribution dates
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         // Insert contribution
         $stmt = $pdo->prepare("
             INSERT INTO contributions (user_id, tontine_id, amount, payment_method, transaction_ref, contribution_date, payment_status)
-            VALUES (:user_id, :tontine_id, :amount, :payment_method, :transaction_ref, NOW(), 'Paid')
+            VALUES (:user_id, :tontine_id, :amount, :payment_method, :transaction_ref, NOW(), 'Pending')
         ");
         $stmt->execute([
             'user_id' => $user_id,

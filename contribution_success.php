@@ -65,18 +65,24 @@ try {
         $payment_status = $joinRequest['payment_status'];
 
         if ($payment_status == "Pending") {
-            // Fetch payment status from the payment gateway (Ensure hdev_payment is defined and imported)
+            // Fetch payment status from the payment gateway
             $paymentResponse = hdev_payment::get_pay($ref_id);
 
-            if (isset($paymentResponse->status)) {
-                $status1 = $paymentResponse->status;
+            if ($paymentResponse) {
+                $status1 = $paymentResponse->status ?? null;
 
                 // Map payment status from the gateway to database values
                 $newStatus = match ($status1) {
                     'success' => "Approved",
                     'failed' => "Failure",
-                    default => "Pending",
+                    'pending', 'initiated' => "Pending",
+                    default => "Unknown", // Handle unexpected statuses
                 };
+
+                // Log unexpected statuses
+                if ($newStatus === "Unknown") {
+                    error_log("Unexpected payment status: " . $status1 . " for transaction ref: " . $ref_id);
+                }
 
                 // Update the payment status in the database
                 $updateStmt = $pdo->prepare("
@@ -86,11 +92,21 @@ try {
                 ");
                 $updateStmt->bindValue(':payment_status', $newStatus);
                 $updateStmt->bindValue(':id', $id, PDO::PARAM_INT);
-                $updateStmt->execute();
+
+                try {
+                    $updateStmt->execute();
+
+                    if ($updateStmt->rowCount() === 0) {
+                        error_log("No rows updated for contribution ID: " . $id);
+                    }
+                } catch (PDOException $e) {
+                    error_log("Database update error for ID $id: " . $e->getMessage());
+                }
+            } else {
+                error_log("Payment gateway response missing for transaction ref: " . $ref_id);
             }
         }
     }
-
 } catch (PDOException $e) {
     die("Error: " . htmlspecialchars($e->getMessage()));
 }
@@ -112,8 +128,8 @@ $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
 
 // Notification count (Adjust this as needed)
 $total_notifications = 5;
+?>
 
-?> 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -227,27 +243,32 @@ $total_notifications = 5;
         <h1 class="text-center">Contributions for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
         <?php if (!empty($contributions)): ?>
             <table class="table table-bordered table-striped">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Payment Method</th>
-                        <th>Transaction Reference</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($contributions as $contribution): ?>
-                        <tr>
-                            <td><?php echo date('Y-m-d', strtotime($contribution['contribution_date'])); ?></td>
-                            <td><?php echo number_format($contribution['amount'], 2); ?></td>
-                            <td><?php echo htmlspecialchars($contribution['payment_method']); ?></td>
-                            <td><?php echo htmlspecialchars($contribution['transaction_ref']); ?></td>
-                            <td><?php echo htmlspecialchars($contribution['payment_status']); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+    <thead class="thead-dark">
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Payment Method</th>
+            <th>Transaction Reference</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php 
+        $counter = ($page - 1) * $perPage + 1; // Start counting based on pagination
+        foreach ($contributions as $contribution): 
+        ?>
+            <tr>
+                <td><?php echo $counter++; ?></td> <!-- Increment the counter -->
+                <td><?php echo date('Y-m-d', strtotime($contribution['contribution_date'])); ?></td>
+                <td><?php echo number_format($contribution['amount'], 2); ?></td>
+                <td><?php echo htmlspecialchars($contribution['payment_method']); ?></td>
+                <td><?php echo htmlspecialchars($contribution['transaction_ref']); ?></td>
+                <td><?php echo htmlspecialchars($contribution['payment_status']); ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
 
             <!-- Pagination -->
             <?php
