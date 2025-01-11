@@ -234,7 +234,7 @@ if (!$result || empty($result['amount'])) {
 </div>
 
 <script>
-  $('#joinForm').on('submit', function(e) {
+$('#joinForm').on('submit', function(e) {
     e.preventDefault();
 
     $.ajax({
@@ -262,7 +262,6 @@ if (!$result || empty($result['amount'])) {
         }
     });
 });
-
 
 
     function confirmLogout() {
