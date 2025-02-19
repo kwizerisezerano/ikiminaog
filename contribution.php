@@ -242,34 +242,28 @@ $('#joinForm').on('submit', function(e) {
         type: 'POST',
         data: $(this).serialize(),
         success: function(response) {
-            try {
-                const res = JSON.parse(response);
+    console.log(response);  // Log the response to see what is returned
+    try {
+        const res = JSON.parse(response);
 
-                Swal.fire({
-                    title: res.title,
-                    text: res.message,
-                    icon: res.status === 'success' ? 'success' : 'error',
-                }).then(() => {
-                    // Redirect if successful and redirect_url is provided
-                    if (res.status === 'success' && res.redirect_url) {
-                        window.location.href = res.redirect_url;
-                    }
-                });
-            } catch (e) {
-                Swal.fire({
-                    title: 'Parsing Error',
-                    text: 'Unexpected response from server.',
-                    icon: 'error',
-                });
+        Swal.fire({
+            title: res.title,
+            text: res.message,
+            icon: res.status === 'success' ? 'success' : 'error',
+        }).then(() => {
+            if (res.status === 'success' && res.redirect_url) {
+                window.location.href = res.redirect_url;
             }
-        },
-        error: function() {
-            Swal.fire({
-                title: 'Server Error',
-                text: 'Please try again later.',
-                icon: 'error',
-            });
-        }
+        });
+    } catch (e) {
+        Swal.fire({
+            title: 'Parsing Error',
+            text: 'Unexpected response from server.',
+            icon: 'error',
+        });
+    }
+}
+
     });
 });
 
