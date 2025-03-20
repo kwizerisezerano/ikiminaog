@@ -72,6 +72,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
 
         // Check if the contribution date already exists in contributions or missed contributions
         $contribution_date = date('Y-m-d');
+
+        // Check if contribution date is part of the expected dates
+        if (!in_array($contribution_date, $dates)) {
+            echo json_encode([
+                'status' => 'error',
+                'title' => 'Invalid Contribution Date',
+                'message' => 'The current date is not a valid contribution date for this tontine.',
+            ]);
+            exit();
+        }
+
         $stmt = $pdo->prepare("
             SELECT COUNT(*) 
             FROM contributions c
