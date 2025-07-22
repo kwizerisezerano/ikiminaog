@@ -42,7 +42,7 @@
             position: relative;
         }
         .valid-icon {
-            color: green;
+            color: #007bff !important; /* Force blue color */
             font-size: 1.2rem;
             position: absolute;
             right: 10px;
@@ -50,6 +50,11 @@
             transform: translateY(-50%);
             display: none;
             pointer-events: none;
+        }
+        
+        /* Additional rule to ensure all Font Awesome icons are blue */
+        .fas.fa-check.valid-icon {
+            color: #007bff !important;
         }
         .toggle-password {
             position: absolute;
@@ -103,6 +108,36 @@
         #registrationFormContainer.modal-active {
             opacity: 0.5;
         }
+        
+        /* Loading spinner styles */
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .loading::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: -12px 0 0 -12px;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 1000;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn-loading {
+            color: transparent !important;
+        }
     </style>
 </head>
 <body>
@@ -119,48 +154,47 @@
         </p>
     </div>
 </div>
+<div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+    <div class="container shadow p-4 bg-white rounded  " id="registrationFormContainer">
+        <h2 class="form-header">IKIMINA MIS</h2>
+        <p class="form-subheader">Register your account</p>
 
-<div class="container shadow p-4 bg-white rounded" id="registrationFormContainer">
-    <h2 class="form-header">IKIMINA MIS</h2>
-    <p class="form-subheader">Create a new account<br>It's quick and easy.</p>
+        <div class="error-text" id="registration-error" style="display: none;"></div>
 
-    <div class="error-text" id="registration-error" style="display: none;"></div>
-
-    <form id="registrationForm" action="user_registration_process.php" method="POST">
-        <div class="form-row">
-            <div class="form-group col-md-6">
+        <form id="registrationForm" action="user_registration_process.php" method="POST">
+            <div class="form-group">
                 <input type="text" class="form-control" name="firstname" id="firstname" placeholder="Firstname" required>
                 <small class="error-text" id="firstname-error"></small>
-                <span class="valid-icon" id="firstname-valid">✔</span>
+                <i class="fas fa-check valid-icon" id="firstname-valid"></i>         
+            
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group">
                 <input type="text" class="form-control" name="lastname" id="lastname" placeholder="Lastname" required>
                 <small class="error-text" id="lastname-error"></small>
-                <span class="valid-icon" id="lastname-valid">✔</span>
+                <i class="fas fa-check valid-icon" id="lastname-valid"></i>
             </div>
-        </div>
-        <div class="form-group">
-            <input type="text" class="form-control" name="phone_number" id="phone_number" placeholder="Phone Number" maxlength="15" required>
-            <small class="error-text" id="phone_number-error"></small>
-            <span class="valid-icon" id="phone_number-valid">✔</span>
-        </div>
-        <div class="form-group">
-            <input type="password" class="form-control" name="password" id="password" placeholder="Password" required>
-            <small class="error-text" id="password-error"></small>
-            <i class="fas fa-eye toggle-password" id="togglePassword"></i>
-            <span class="valid-icon" id="password-valid">✔</span>
-        </div>
-        <div class="form-group form-check">
-            <input type="checkbox" class="form-check-input" id="terms" name="terms">
-            <label class="form-check-label checkbox-text" for="terms">I agree to the <a href="#" id="termsLink">Terms and Conditions</a>.</label>
-            <small class="error-text" id="terms-error"></small>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block" id="submitBtn" disabled>Sign Up</button>
-    </form>
+            <div class="form-group">
+                <input type="text" class="form-control" name="phone_number" id="phone_number" placeholder="Phone Number" maxlength="15" required>
+                <small class="error-text" id="phone_number-error"></small>
+                <i class="fas fa-check valid-icon" id="phone_number-valid"></i>
+            </div>
+            <div class="form-group">
+                <input type="password" class="form-control" name="password" id="password" placeholder="Password" required>
+                <small class="error-text" id="password-error"></small>
+                <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                <i class="fas fa-check valid-icon" id="password-valid"></i>
+            </div>
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="terms" name="terms">
+                <label class="form-check-label checkbox-text" for="terms">I agree to the <a href="#" id="termsLink">Terms and Conditions</a>.</label>
+                <small class="error-text" id="terms-error"></small>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="submitBtn" disabled>Sign Up</button>
+        </form>
 
-    <p class="form-footer mt-3">Already have an Account? <a href="index.php">Log In</a></p>
+        <p class="form-footer mt-3">Already have an Account? <a href="index.php">Log In</a></p>
+    </div>
 </div>
-
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -233,6 +267,11 @@
 
         $('#registrationForm').on('submit', function(e) {
             e.preventDefault();
+            
+            // Add loading state
+            const submitBtn = $('#submitBtn');
+            submitBtn.addClass('loading btn-loading').prop('disabled', true);
+            submitBtn.text('Processing...');
 
             $.ajax({
                 url: $(this).attr('action'),
@@ -240,10 +279,14 @@
                 data: $(this).serialize(),
                 dataType: 'json',
                 success: function(response) {
+                    // Remove loading state
+                    submitBtn.removeClass('loading btn-loading').prop('disabled', false);
+                    submitBtn.text('Sign Up');
+                    
                     if (response.error) {
                         Swal.fire({
                             icon: 'error',
-                            title: 'Oops...',
+                            title: 'Registration Failed',
                             text: response.message,
                         });
                     } else {
@@ -252,17 +295,46 @@
                             title: 'Success!',
                             text: response.message,
                         }).then(() => {
-                           // Redirect to verify.php with phone number
-            const phoneNumber = $('#phone_number').val().trim();
-            window.location.href = 'verify.php?phone_number=' + encodeURIComponent(phoneNumber);
+                            // Redirect to verify.php with phone number
+                            const phoneNumber = $('#phone_number').val().trim();
+                            window.location.href = 'verify.php?phone_number=' + encodeURIComponent(phoneNumber);
                         });
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    // Remove loading state
+                    submitBtn.removeClass('loading btn-loading').prop('disabled', false);
+                    submitBtn.text('Sign Up');
+                    
+                    let errorMessage = 'An unexpected error occurred.';
+                    
+                    // Try to get more specific error message
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.message) {
+                                errorMessage = response.message;
+                            }
+                        } catch (e) {
+                            // If response is not JSON, check for common errors
+                            if (xhr.status === 0) {
+                                errorMessage = 'Connection failed. Please check your internet connection.';
+                            } else if (xhr.status === 404) {
+                                errorMessage = 'Registration service not found. Please contact support.';
+                            } else if (xhr.status === 500) {
+                                errorMessage = 'Server error. Please try again later.';
+                            } else {
+                                errorMessage = `Server returned error ${xhr.status}: ${error}`;
+                            }
+                        }
+                    }
+                    
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error',
-                        text: 'An unexpected error occurred.',
+                        title: 'Connection Error',
+                        text: errorMessage,
                     });
                 }
             });
