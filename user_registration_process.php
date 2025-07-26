@@ -27,17 +27,17 @@ if (empty($firstname) || empty($lastname) || empty($phone_number) || empty($pass
 }
 
 // Validate Firstname
-if (!preg_match("/^[a-zA-Z\s]+$/", $firstname)) {
+if (!preg_match("/^[a-zA-Z\s]+$/", $firstname) || strlen($firstname) < 3) {
     $response['error'] = true;
-    $response['message'] = 'Firstname must only contain letters and spaces.';
+    $response['message'] = 'Firstname must be at least 3 characters and contain only letters and spaces.';
     echo json_encode($response);
     exit;
 }
 
 // Validate Lastname
-if (!preg_match("/^[a-zA-Z\s]+$/", $lastname)) {
+if (!preg_match("/^[a-zA-Z\s]+$/", $lastname) || strlen($lastname) < 3) {
     $response['error'] = true;
-    $response['message'] = 'Lastname must only contain letters and spaces.';
+    $response['message'] = 'Lastname must be at least 3 characters and contain only letters and spaces.';
     echo json_encode($response);
     exit;
 }
@@ -99,7 +99,7 @@ try {
         Your OTP for verifying your account is: $otp.\n
         Please use this code to activate your account.\n
         Or click the link below to verify your account:\n
-        http://localhost/ikimina/verify.php?phone_number=" . urlencode($phone_number) . "&otp=" . urlencode($otp) . "\n
+        https://yourdomain.com/ikimina/verify.php?phone_number=" . urlencode($phone_number) . "&otp=" . urlencode($otp) . "\n
     ";
 
     // Attempt to send SMS

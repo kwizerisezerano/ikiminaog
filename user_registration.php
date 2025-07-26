@@ -6,14 +6,21 @@
     <title>Ikimina MIS Registration</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
+        .swal2-confirm:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
         .container {
             max-width: 400px;
             margin-top: 10px;
         }
         .form-header {
             text-align: center;
-            color: #007bff;
+            color: #007bff !important;
             font-size: 1.5rem;
             font-weight: bold;
         }
@@ -41,7 +48,7 @@
             position: relative;
         }
         .valid-icon {
-            color: #007bff !important; /* Force blue color */
+            color: #007bff !important;
             font-size: 1.2rem;
             position: absolute;
             right: 10px;
@@ -51,32 +58,38 @@
             pointer-events: none;
         }
         
-        /* Additional rule to ensure all Font Awesome icons are blue */
-        .fas.fa-check.valid-icon {
+        /* Force blue color for all valid icons */
+        .fas.fa-check.valid-icon,
+        .valid-icon.fas.fa-check {
             color: #007bff !important;
         }
+        
         .toggle-password {
             position: absolute;
             right: 40px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #007bff;
+            color: #007bff !important;
             display: none;
             z-index: 1;
         }
+        
         .valid-icon.show {
             display: inline;
         }
+        
         a {
             text-decoration: none;
-            color: #007bff;
+            color: #007bff !important;
             transition: color 0.3s ease;
         }
+        
         a:hover {
-            color: #0056b3;
+            color: #0056b3 !important;
             text-decoration: underline;
         }
+        
         .terms-modal {
             display: none;
             position: fixed;
@@ -91,10 +104,12 @@
             background-color: #ffffff;
             box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
         }
+        
         .modal-content {
             padding: 20px;
             text-align: center;
         }
+        
         .close-modal {
             position: absolute;
             top: 10px;
@@ -104,6 +119,7 @@
             font-size: 1.5rem;
             font-weight: bold;
         }
+        
         #registrationFormContainer.modal-active {
             opacity: 0.5;
         }
@@ -138,117 +154,47 @@
             color: transparent !important;
         }
 
-        /* Enhanced loading modal styles */
-        .success-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
+        /* Primary button styling */
+        .btn-primary {
+            background-color: #007bff !important;
+            border-color: #007bff !important;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3 !important;
+            border-color: #0056b3 !important;
         }
 
-        .success-content {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease-out;
+        /* SweetAlert2 custom styling */
+        .swal2-popup {
+            border-radius: 15px !important;
         }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        
+        .swal2-confirm {
+            background-color: #007bff !important;
+            border: none !important;
         }
-
-        .success-icon {
-            width: 80px;
-            height: 80px;
-            border: 4px solid #28a745;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            animation: checkmark 0.6s ease-in-out;
+        
+        .swal2-confirm:hover {
+            background-color: #0056b3 !important;
         }
-
-        .success-icon i {
-            color: #28a745;
-            font-size: 40px;
+        
+        .swal2-icon.swal2-success {
+            border-color: #007bff !important;
+            color: #007bff !important;
         }
-
-        @keyframes checkmark {
-            0% {
-                transform: scale(0);
-            }
-            50% {
-                transform: scale(1.2);
-            }
-            100% {
-                transform: scale(1);
-            }
+        
+        .swal2-icon.swal2-success [class^='swal2-success-line'] {
+            background-color: #007bff !important;
         }
-
-        .success-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 15px;
+        
+        .swal2-icon.swal2-success .swal2-success-ring {
+            border-color: #007bff !important;
         }
-
-        .success-message {
-            font-size: 1.1rem;
-            color: #666;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-
-        .countdown-container {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .countdown-text {
-            font-size: 1rem;
-            color: #6c757d;
-            margin-bottom: 10px;
-        }
-
-        .countdown-display {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #007bff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .spinner-border {
-            width: 30px;
-            height: 30px;
-        }
-
-        .redirect-info {
-            font-size: 0.9rem;
-            color: #6c757d;
-            font-style: italic;
+        
+        .swal2-icon.swal2-error {
+            border-color: #dc3545 !important;
+            color: #dc3545 !important;
         }
     </style>
 </head>
@@ -276,22 +222,22 @@
 
         <form id="registrationForm" action="user_registration_process.php" method="POST">
             <div class="form-group">
-                <input type="text" class="form-control" name="firstname" id="firstname" placeholder="Firstname" required>
+                <input type="text" class="form-control" name="firstname" id="firstname" placeholder="Firstname" required autocomplete="off">
                 <small class="error-text" id="firstname-error"></small>
                 <i class="fas fa-check valid-icon" id="firstname-valid"></i>         
             </div>
             <div class="form-group">
-                <input type="text" class="form-control" name="lastname" id="lastname" placeholder="Lastname" required>
+                <input type="text" class="form-control" name="lastname" id="lastname" placeholder="Lastname" required autocomplete="off">
                 <small class="error-text" id="lastname-error"></small>
                 <i class="fas fa-check valid-icon" id="lastname-valid"></i>
             </div>
             <div class="form-group">
-                <input type="text" class="form-control" name="phone_number" id="phone_number" placeholder="Phone Number" maxlength="15" required>
+                <input type="text" class="form-control" name="phone_number" id="phone_number" placeholder="Phone Number" maxlength="15" required autocomplete="off">
                 <small class="error-text" id="phone_number-error"></small>
                 <i class="fas fa-check valid-icon" id="phone_number-valid"></i>
             </div>
             <div class="form-group">
-                <input type="password" class="form-control" name="password" id="password" placeholder="Password" required>
+                <input type="password" class="form-control" name="password" id="password" placeholder="Password" required autocomplete="off">
                 <small class="error-text" id="password-error"></small>
                 <i class="fas fa-eye toggle-password" id="togglePassword"></i>
                 <i class="fas fa-check valid-icon" id="password-valid"></i>
@@ -310,12 +256,19 @@
 
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script>
-    function validateField(field, regex, errorMessage) {
+    function validateField(field, regex, errorMessage, minLength = null) {
         const value = field.val().trim();
         const errorField = $("#" + field.attr("id") + "-error");
         const validIcon = $("#" + field.attr("id") + "-valid");
 
-        if (regex.test(value)) {
+        let isValid = regex.test(value);
+        
+        // Check minimum length if specified
+        if (isValid && minLength !== null && value.length < minLength) {
+            isValid = false;
+        }
+
+        if (isValid) {
             errorField.text("").hide();
             validIcon.addClass("show");
             return true;
@@ -326,41 +279,51 @@
         }
     }
 
-    function showSuccessModal(message, phoneNumber) {
-        const modalHTML = `
-            <div class="success-modal" id="successModal">
-                <div class="success-content">
-                    <div class="success-icon">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    <div class="success-title">Success!</div>
-                    <div class="success-message">${message}</div>
-                    <div class="countdown-container">
-                        <div class="countdown-text">Redirecting to verification page in:</div>
-                        <div class="countdown-display">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <span id="countdownNumber">5</span>
+    function showSuccessAlert(message, phoneNumber) {
+        let timerInterval;
+        Swal.fire({
+            title: 'Registration Successful!',
+            html: `
+                <div style="text-align: center;">
+                    <p style="margin-bottom: 20px; font-size: 16px; color: #666;">${message}</p>
+                    <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                        <p style="margin-bottom: 10px; color: #6c757d;">Redirecting to verification page in:</p>
+                        <div style="font-size: 48px; font-weight: bold; color: #007bff;">
+                            <b></b>
                         </div>
                     </div>
-                    <div class="redirect-info">Please wait while we redirect you...</div>
+                    <p style="font-size: 14px; color: #6c757d; font-style: italic;">Please wait while we redirect you...</p>
                 </div>
-            </div>
-        `;
-        
-        $('body').append(modalHTML);
-        
-        let countdown = 5;
-        const countdownElement = $('#countdownNumber');
-        
-        const interval = setInterval(() => {
-            countdown--;
-            countdownElement.text(countdown);
-            
-            if (countdown <= 0) {
-                clearInterval(interval);
+            `,
+            timer: 5000,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                const b = Swal.getHtmlContainer().querySelector('b');
+                timerInterval = setInterval(() => {
+                    b.textContent = Math.ceil(Swal.getTimerLeft() / 1000);
+                }, 100);
+            },
+            willClose: () => {
+                clearInterval(timerInterval);
+            }
+        }).then((result) => {
+            if (result.dismiss === Swal.DismissReason.timer) {
                 window.location.href = 'verify.php?phone_number=' + encodeURIComponent(phoneNumber);
             }
-        }, 1000);
+        });
+    }
+
+    function showErrorAlert(title, message) {
+        Swal.fire({
+            icon: 'error',
+            title: title,
+            text: message,
+            confirmButtonText: 'Try Again',
+            confirmButtonColor: '#007bff'
+        });
     }
 
     $(document).ready(function() {
@@ -373,11 +336,11 @@
         });
 
         $('#firstname').on('input', function() {
-            validateField($(this), namePattern, "Firstname must only contain letters and spaces.");
+            validateField($(this), namePattern, "Firstname must be at least 3 characters and contain only letters and spaces.", 3);
         });
 
         $('#lastname').on('input', function() {
-            validateField($(this), namePattern, "Lastname must only contain letters and spaces.");
+            validateField($(this), namePattern, "Lastname must be at least 3 characters and contain only letters and spaces.", 3);
         });
 
         $('#phone_number').on('input', function() {
@@ -433,12 +396,12 @@
                     submitBtn.text('Sign Up');
                     
                     if (response.error) {
-                        // Show error with simple alert - no SweetAlert2
-                        alert('Registration Failed: ' + response.message);
+                        // Show error with SweetAlert2
+                        showErrorAlert('Registration Failed', response.message);
                     } else {
-                        // Show custom success modal with countdown - NO SweetAlert2
+                        // Show success alert with countdown
                         const phoneNumber = $('#phone_number').val().trim();
-                        showSuccessModal(response.message, phoneNumber);
+                        showSuccessAlert(response.message, phoneNumber);
                     }
                 },
                 error: function(xhr, status, error) {
@@ -471,8 +434,8 @@
                         }
                     }
                     
-                    // Show error with simple alert - no SweetAlert2
-                    alert('Connection Error: ' + errorMessage);
+                    // Show error with SweetAlert2
+                    showErrorAlert('Connection Error', errorMessage);
                 }
             });
         });

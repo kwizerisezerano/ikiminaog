@@ -344,7 +344,7 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
                         <h5 id="previewName">Tontine Name</h5>
                         <p id="previewSector">District-Sector: Kigali - Rwanda</p>
                         <p id="previewPurpose">Total Contribution: A community fund for social support.</p>
-                        <a href="#" class="btn btn-primary" style="padding: 5px;">Visit Tontine Page</a>
+                      
                     </div>
                 </div>
             </div>
@@ -372,16 +372,20 @@ document.getElementById('registrationForm').addEventListener('submit', function(
     .then(data => {
         if (data.success) {
             // Show SweetAlert success message
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message,
-                timer: 3000,
-                showConfirmButton: true
-            }).then(() => {
-                // Redirect to tontine profile page after the alert
-                window.location.href = data.redirectUrl;
-            });
+           Swal.fire({
+    icon: 'success',
+    title: 'Success!',
+    text: data.message,
+    timer: 3000,
+    showConfirmButton: false,
+    allowOutsideClick: false,
+    allowEscapeKey: false
+});
+
+setTimeout(() => {
+    window.location.href = data.redirectUrl;
+}, 1000);
+
         } else {
             // Show SweetAlert error message
             Swal.fire({
