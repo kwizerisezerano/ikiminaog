@@ -266,9 +266,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </ul>
 
         <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="#">
-                    <i class="fas fa-user"></i> 
+               <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white d-flex align-items-center" href="#" style="gap: 8px;">
+                    <div style="background-color: #ffffff; color: #007bff; font-weight: bold; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1rem; text-transform: uppercase;">
+                        <?php echo strtoupper(substr($user['firstname'], 0, 1) . substr($user['lastname'], 0, 1)); ?>
+                    </div>
                     <?php echo htmlspecialchars($user_name); ?>
                 </a>
             </li>
