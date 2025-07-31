@@ -125,121 +125,141 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
 
-       
+    :root {
+    --primary-color: #0f73adff;
+    --primary-dark: #0b5d8a;
+    --primary-hover-shadow: rgba(15, 115, 173, 0.3);
+}
 
-        .preview {
-            display: none; /* Hidden by default */
-            margin-top: 10px;
-            width: 100px;
-            height: 100px;
-            background-color: #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            position: relative;
-        }
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f7f9fc;
+    font-family: Arial, sans-serif;
+}
 
-        .preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+.container {
+    margin-top: 0px;
+    padding-top: 0px;
+}
 
-        .close-preview {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #f00;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 14px;
-            cursor: pointer;
-        }
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
-        input[type="file"] {
-            margin-top: 5px;
-            display: block;
-            margin-left: 1px;
-        }
+.card-header {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 2px 5px;
+    text-align: center;
+}
 
-        body {
-            background-color: #f7f9fc;
-            font-family: Arial, sans-serif;
-        }
+.form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: -30px;
+}
 
-        .container {
-        margin-top: 0px;
-        padding-top: 0px;
-        }
+.input-group-text {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 4px 8px;
+}
 
-        .card {
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-         
-        }
+.btn-primary {
+    background-color: var(--primary-color);
+    border: none;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    padding: 1px;
+    font-weight: bold;
+}
 
-        .card-header {
-            background-color: #00a3e0;
-            color: white;
-            font-weight: bold;
-            font-size: 1rem;
-            padding: 2PX 5px;
-            text-align: center;
-        }
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    box-shadow: 0 3px 8px var(--primary-hover-shadow);
+}
 
-        .form-group label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: -30px;
-        }
+.btn-outline-primary {
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
 
-        .input-group-text {
-            background-color: #00a3e0;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-        }
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
 
-        .btn-primary {
-            background-color: #00a3e0;
-            border: none;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
-            padding: 1px;
-            font-weight: bold;
-        }
+.form-control,
+#file-input {
+    border-radius: 6px;
+    padding: 0px 10px;
+    border-color: #ced4da;
+}
 
-        .btn-primary:hover {
-            background-color: #008bb8;
-            box-shadow: 0 3px 8px rgba(0, 163, 224, 0.3);
-        }
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 4px var(--primary-hover-shadow);
+}
 
-        .form-control, #file-input {
-            border-radius: 6px;
-            padding: 0px 10px;
-            border-color: #ced4da;
-            /* margin-top: -5px; */
-        }
+.preview {
+    display: none;
+    margin-top: 10px;
+    width: 100px;
+    height: 100px;
+    background-color: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
 
-        .form-control:focus {
-            border-color: #00a3e0;
-            box-shadow: 0 0 4px rgba(0, 163, 224, 0.3);
-        }
-        .form-group {
-    margin-bottom: 0px; /* Reduces space between form groups */
+.preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.close-preview {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+input[type="file"] {
+    margin-top: 5px;
+    display: block;
+    margin-left: 1px;
+}
+
+.form-group {
+    margin-bottom: 0px;
 }
 
 .form-row {
-    margin-bottom: 10px; /* Reduces space between rows */
+    margin-bottom: 10px;
 }
- .image-upload-container {
-            text-align: center;
-            margin-top: 20px;
-        }
+
+.image-upload-container {
+    text-align: center;
+    margin-top: 20px;
+}
 
     </style>
 </head>
@@ -256,16 +276,24 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
                                 <label for="tontineName">Tontine Name *</label>
                                 <input type="text" class="form-control" id="tontineName" name="tontineName" required>
                             </div>
-                            <div class="form-group" >
-                                <label>Upload Tontine Logo</label>
-                                <input type="file" id="file-input" name="logo" accept="image/*">
-                                <div class="preview" id="image-preview">
+                            <div class="form-group">
+                                <label for="file-input">Tontine Logo</label>
+                                <div class="custom-file-upload text-center">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('file-input').click()">
+                                        <i class="fas fa-upload"></i> Upload Logo
+                                    </button>
+                                    <input type="file" id="file-input" name="logo" accept="image/*" style="display: none;">
+                                    <small class="text-muted d-block mt-1">Accepted formats: JPG, PNG, GIF (max 2MB)</small>
+                                </div>
+
+                                <div class="preview mt-2" id="image-preview">
                                     <button type="button" class="close-preview" onclick="removeImagePreview()">x</button>
                                     <img src="#" alt="Image Preview">
                                 </div>
                             </div>
+
                             <div class="form-group">
-                                <label for="join_date">Join Date *</label>
+                                <label for="join_date">Created On *</label>
                                 <input type="date" class="form-control" id="join_date" name="join_date" readonly>
                             </div>
                             <div class="form-group">
@@ -329,7 +357,12 @@ if (!preg_match('/^[a-zA-Z\s.,\'-]+$/', $tontineName)) {
 </div>
 
 
-                            <button type="submit" class="btn btn-primary btn-block mt-2"><i class="fas fa-save"></i> Register</button>
+                            <button type="submit" class="btn btn-primary btn-block mt-2"><i class="fas fa-save"></i> Create Tontine</button>
+                              <a href="user_profile.php" class="btn btn-primary btn-block mt-2 text-white" style="text-decoration: none;">
+    <i class="fas fa-home"></i> Go to Home
+</a>
+
+              
                         </form>
                     </div>
                 </div>
@@ -371,20 +404,22 @@ document.getElementById('registrationForm').addEventListener('submit', function(
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show SweetAlert success message
-           Swal.fire({
-    icon: 'success',
-    title: 'Success!',
-    text: data.message,
-    timer: 3000,
-    showConfirmButton: false,
-    allowOutsideClick: false,
-    allowEscapeKey: false
-});
+            // Show SweetAlert success message with primary color
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message,
+                timer: 3000,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                iconColor: '#0f73adff', // Primary color for the tick
+                confirmButtonColor: '#0f73adff' // Primary color for buttons if shown
+            });
 
-setTimeout(() => {
-    window.location.href = data.redirectUrl;
-}, 1000);
+            setTimeout(() => {
+                window.location.href = data.redirectUrl;
+            }, 1000);
 
         } else {
             // Show SweetAlert error message
@@ -392,13 +427,13 @@ setTimeout(() => {
                 icon: 'error',
                 title: 'Error!',
                 text: data.message,
-                showConfirmButton: true
+                showConfirmButton: true,
+                confirmButtonColor: '#0f73adff' // Primary color for button
             });
         }
     })
     .catch(error => console.error('Error:', error));
 });
-
 document.getElementById('occurrence').addEventListener('change', function() {
     var occurrenceValue = this.value;
     var monthlyDateInput = document.getElementById('monthlyDateInput');
