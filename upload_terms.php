@@ -5,11 +5,10 @@ require 'config.php'; // Database connection
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['terms_file'])) {
     $tontine_id = $_POST['tontine_id'];
     $fileName = $_FILES['terms_file']['name'];
-    
-    // Check if the file upload was successful
+
     if (is_uploaded_file($_FILES['terms_file']['tmp_name'])) {
         $fileData = file_get_contents($_FILES['terms_file']['tmp_name']);
-        
+
         // Check if a record with the given tontine_id already exists
         $checkQuery = "SELECT COUNT(*) FROM pdf_files WHERE tontine_id = :tontine_id";
         $checkStmt = $pdo->prepare($checkQuery);
@@ -18,10 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['terms_file'])) {
         $recordExists = $checkStmt->fetchColumn() > 0;
 
         if ($recordExists) {
-            // Update the existing record
+            // Update existing record
             $query = "UPDATE pdf_files SET file_name = :file_name, file_data = :file_data WHERE tontine_id = :tontine_id";
         } else {
-            // Insert a new record if none exists
+            // Insert new record
             $query = "INSERT INTO pdf_files (file_name, file_data, tontine_id) VALUES (:file_name, :file_data, :tontine_id)";
         }
 
@@ -30,32 +29,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['terms_file'])) {
         $stmt->bindParam(':file_data', $fileData, PDO::PARAM_LOB);
         $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
 
+        echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
+
         if ($stmt->execute()) {
-            // Success message using SweetAlert
-            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
             echo "<script>
                 document.addEventListener('DOMContentLoaded', function() {
                     Swal.fire({
                         title: 'Success!',
                         text: 'Terms and conditions uploaded successfully!',
-                        icon: 'success'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = 'view_terms.php?id=$tontine_id';
-                        }
+                        icon: 'success',
+                        iconColor: '#0f73adff',
+                        showConfirmButton: false,
+                        timer: 500,
+                        timerProgressBar: true
                     });
+                    setTimeout(function() {
+                        window.location.href = 'view_terms.php?id=$tontine_id';
+                    }, 2000);
                 });
             </script>";
         } else {
-            // Error message using SweetAlert
-            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
             echo "<script>
                 document.addEventListener('DOMContentLoaded', function() {
                     Swal.fire({
                         title: 'Error!',
                         text: 'There was an error uploading the terms and conditions.',
-                        icon: 'error'
+                        icon: 'error',
+                        iconColor: '#0f73adff',
+                        showConfirmButton: false,
+                        timer: 500,
+                        timerProgressBar: true
                     });
+                    setTimeout(function() {
+                        window.location.href = 'tontine_profile.php?id=$tontine_id';
+                    }, 2000);
                 });
             </script>";
         }
@@ -66,16 +73,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['terms_file'])) {
                 Swal.fire({
                     title: 'Error!',
                     text: 'No file was uploaded. Please try again.',
-                    icon: 'error'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = 'tontine_profile.php?id=$tontine_id';
-                    }
+                    icon: 'error',
+                    iconColor: '#0f73adff',
+                    showConfirmButton: false,
+                    timer: 500,
+                    timerProgressBar: true
                 });
+                setTimeout(function() {
+                    window.location.href = 'tontine_profile.php?id=$tontine_id';
+                }, 500);
             });
         </script>";
-        
     }
-    exit(); // Ensures no further processing occurs after the response
+    exit(); // Stop script execution after sending response
 }
 ?>

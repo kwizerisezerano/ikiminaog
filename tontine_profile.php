@@ -145,6 +145,7 @@ if ($creator) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --primary-color: #0f73adff;
@@ -398,13 +399,13 @@ if ($creator) {
 
         /* Action Buttons */
         .actions-section {
-            padding: 2rem;
+            padding: 1rem;
         }
 
         .actions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
         }
 
         .action-btn {
@@ -444,6 +445,7 @@ if ($creator) {
 
         .action-btn i {
             font-size: 1rem;
+            color:var(--primary-color);
         }
 
         /* Right Sidebar */
@@ -725,7 +727,7 @@ if ($creator) {
                                 <span class="detail-value"><?php echo number_format($tontine['total_contributions']); ?> RWF</span>
                             </div>
                             <div class="detail-row">
-                                <span class="detail-label">Interest Rate</span>
+                                <span class="detail-label">Loan Interest Rate</span>
                                 <span class="detail-value"><?php echo intval($tontine['interest']).'%'; ?></span>
                             </div>
                             <div class="detail-row">
@@ -788,7 +790,7 @@ if ($creator) {
                         </a>
                         
                         <button type="button" class="action-btn primary" onclick="confirmJoinTontine()">
-                            <i class="fas fa-user-plus"></i>
+                            <i class="fas fa-user-plus" style="color:white;"></i>
                             <span>Join Now</span>
                         </button>
                         
@@ -798,20 +800,15 @@ if ($creator) {
                         </button>
                         
                         <button type="button" class="action-btn" onclick="confirmLoan()">
-                            <i class="fas fa-money-bill-transfer"></i>
+                            <i class="fas fa-money-bill-wave"></i>
                             <span>Apply Loan</span>
                         </button>
                         
                         <button type="button" class="action-btn" onclick="requestVerification(<?php echo $id; ?>)">
-                            <i class="fas fa-shield-check"></i>
+                            <i class="fas fa-user-check"></i>
                             <span>Verification</span>
-                        </button>
-                        
-                        <button type="button" class="action-btn">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <span>Penalties</span>
-                        </button>
-                        
+                        </button>                      
+                                             
                         <button type="button" class="action-btn" onclick="confirmUpdate()">
                             <i class="fas fa-edit"></i>
                             <span>Update</span>
@@ -1103,12 +1100,10 @@ if ($creator) {
             .then(data => {
                 if (data.success) {
                     document.getElementById(field + '-field').value = newValue;
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Your ' + field + ' has been updated!',
-                        icon: 'success',
-                        confirmButtonColor: 'var(--primary-color)'
-                    });
+                    // Auto-redirect after 0.5 seconds without showing success message
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
                 } else {
                     Swal.fire({
                         title: 'Error!',
