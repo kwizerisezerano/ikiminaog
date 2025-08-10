@@ -118,59 +118,24 @@ $total_notifications = 5;
         <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
-       
         <ul class="navbar-nav mr-auto">
             <li class="nav-item">
                 <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
             </li>
             <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" data-toggle="dropdown">
                     Tontine
                 </a>
-                <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                        <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
-                        <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                     
-                        <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
-                    </div>
-            </li>
-          
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Contributions
-                </a>
-                <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
-                    <a class="dropdown-item" href="#">Send contributions</a>
-                    <a class="dropdown-item" href="#">View Total Contributions</a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
+                    <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
+                    <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
                 </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Loans
-                </a>
-                <div class="dropdown-menu" aria-labelledby="loansDropdown">
-                    <a class="dropdown-item" href="#">View loan status</a>
-                    <a class="dropdown-item" href="#">Apply for loan</a>
-                    <a class="dropdown-item" href="#">Pay for loan</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Penalties
-                </a>
-                <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
-                    <a class="dropdown-item" href="#">View Paid Penalties</a>
-                    <a class="dropdown-item" href="#">View Unpaid Penalties</a>
-                    <a class="dropdown-item" href="#">Pay Penalties</a>
-                </div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
             </li>
         </ul>
 
         <ul class="navbar-nav ml-auto">
-               <li class="nav-item">
+            <li class="nav-item">
                 <a class="nav-link font-weight-bold text-white d-flex align-items-center" href="#" style="gap: 8px;">
                     <div style="background-color: #ffffff; color: #007bff; font-weight: bold; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1rem; text-transform: uppercase;">
                         <?php echo strtoupper(substr($user['firstname'], 0, 1) . substr($user['lastname'], 0, 1)); ?>
@@ -198,69 +163,69 @@ $total_notifications = 5;
     </div>
 </nav>
 
+<div class="justify-content-center d-flex align-items-center" style="height: 100vh;">
+    <div class="form-container mt-1 ">
+        <h5 class="form-title" style="margin-bottom: 1px;">Welcome to <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
 
-<div class="form-container mt-1">
-    <h5 class="form-title" style="margin-bottom: 1px;">Welcome to <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
+        <form id="loanForm" method="POST" action="process_loan.php">
+            <!-- Hidden Fields -->
+            <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
+            <input type="hidden" id="interest_rate" value="<?php echo $interest; ?>">
 
-    <form id="loanForm" method="POST" action="process_loan.php">
-        <!-- Hidden Fields -->
-        <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
-        <input type="hidden" id="interest_rate" value="<?php echo $interest; ?>">
-
-        <!-- Loan Amount -->
-        <div class="mb-1">
-            <label for="amount" class="form-label">Loan Amount</label>
-            <input type="number" class="form-control" id="amount" name="amount"  required>
-        </div>
-
-        <!-- Interest Rate (from Tontine) -->
-        <div class="mb-1">
-            <label for="interest" class="form-label">Interest Rate</label>
-            <input type="text" class="form-control" id="interest" name="interest-rate" value="<?php echo $interest; ?>" readonly>
-        </div>
-
-        <!-- Interest Amount -->
-        <div class="mb-1">
-            <label for="interest_amount" class="form-label">Interest Amount</label>
-            <input type="text" class="form-control" id="interest_amount" name="interest_amount" value="" readonly>
-        </div>
-
-        <!-- Total Amount (Loan + Interest) -->
-        <div class="mb-1">
-            <label for="total_amount" class="form-label">Total Amount</label>
-            <input type="text" class="form-control" id="total_amount" name="total_amount" value="" readonly>
-        </div>
-
-        <!-- Payment Frequency -->
-        <div class="mb-1">
-            <label for="payment_frequency" class="form-label">Payment Frequency</label>
-            <input type="text" class="form-control" id="payment_frequency" name="payment_frequency" value="<?php echo htmlspecialchars($payment_frequency); ?>" readonly>
-        </div>
-
-        <!-- Frequent Payment Date (only for Monthly payments) -->
-        <?php if ($payment_frequency == 'Monthly') : ?>
-            <div class="mb-3">
-                <label for="frequent_payment_date" class="form-label">Frequent Payment Date</label>
-                <input type="text" class="form-control" id="frequent_payment_date" name="frequent_payment_date" value="<?php echo htmlspecialchars($frequent_payment_date); ?>" readonly>
+            <!-- Loan Amount -->
+            <div class="mb-1">
+                <label for="amount" class="form-label">Loan Amount</label>
+                <input type="number" class="form-control" id="amount" name="amount"  required>
             </div>
-        <?php endif; ?>
 
-        <!-- User Phone Number -->
-        <div class="mb-2">
-            <label for="phone_number" class="form-label">Your Phone Number</label>
-            <input type="text" class="form-control" id="phone_number" name="phone_number" value="<?php echo $user_phone; ?>" readonly>
-        </div>
+            <!-- Interest Rate (from Tontine) -->
+            <div class="mb-1">
+                <label for="interest" class="form-label">Interest Rate</label>
+                <input type="text" class="form-control" id="interest" name="interest-rate" value="<?php echo $interest; ?>" readonly>
+            </div>
+
+            <!-- Interest Amount -->
+            <div class="mb-1">
+                <label for="interest_amount" class="form-label">Interest Amount</label>
+                <input type="text" class="form-control" id="interest_amount" name="interest_amount" value="" readonly>
+            </div>
+
+            <!-- Total Amount (Loan + Interest) -->
+            <div class="mb-1">
+                <label for="total_amount" class="form-label">Total Amount</label>
+                <input type="text" class="form-control" id="total_amount" name="total_amount" value="" readonly>
+            </div>
 
             <!-- Payment Frequency -->
-        <div class="mb-1">
-            <label for="payment_frequency" class="form-label"> Late Loan Repayment Amount </label>
-            <input type="text" class="form-control" id="payment_frequency" name="late_loan_amount" value="<?php echo htmlspecialchars($loan_late_amount); ?>" readonly>
-        </div>
-        <!-- Submit Button -->
-        <button type="submit" class="btn btn-submit mb-1" id="submitBtn">Send Loan Request</button>
-    </form>
-</div>
+            <div class="mb-1">
+                <label for="payment_frequency" class="form-label">Payment Frequency</label>
+                <input type="text" class="form-control" id="payment_frequency" name="payment_frequency" value="<?php echo htmlspecialchars($payment_frequency); ?>" readonly>
+            </div>
 
+            <!-- Frequent Payment Date (only for Monthly payments) -->
+            <?php if ($payment_frequency == 'Monthly') : ?>
+                <div class="mb-3">
+                    <label for="frequent_payment_date" class="form-label">Frequent Payment Date</label>
+                    <input type="text" class="form-control" id="frequent_payment_date" name="frequent_payment_date" value="<?php echo htmlspecialchars($frequent_payment_date); ?>" readonly>
+                </div>
+            <?php endif; ?>
+
+            <!-- User Phone Number -->
+            <div class="mb-2">
+                <label for="phone_number" class="form-label">Your Phone Number</label>
+                <input type="text" class="form-control" id="phone_number" name="phone_number" value="<?php echo $user_phone; ?>" readonly>
+            </div>
+
+                <!-- Payment Frequency -->
+            <div class="mb-1">
+                <label for="payment_frequency" class="form-label"> Late Loan Repayment Amount </label>
+                <input type="text" class="form-control" id="payment_frequency" name="late_loan_amount" value="<?php echo htmlspecialchars($loan_late_amount); ?>" readonly>
+            </div>
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-submit mb-1" id="submitBtn">Send Loan Request</button>
+        </form>
+    </div>
+</div>
 
     <script>
     // Initialize the loan calculations on page load

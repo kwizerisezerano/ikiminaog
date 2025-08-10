@@ -176,68 +176,54 @@ $total_notifications = 5;
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Tontine
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                        <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
-                        <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                        <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Contributions
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
-                        <a class="dropdown-item" href="#">Send contributions</a>
-                        <a class="dropdown-item" href="#">View Total Contributions</a>
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Loans
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="loansDropdown">
-                        <a class="dropdown-item" href="#">View loan status</a>
-                        <a class="dropdown-item" href="#">Apply for loan</a>
-                        <a class="dropdown-item" href="#">Pay for loan</a>
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Penalties
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
-                        <a class="dropdown-item" href="#">View Paid Penalties</a>
-                        <a class="dropdown-item" href="#">View Unpaid Penalties</a>
-                        <a class="dropdown-item" href="#">Pay Penalties</a>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
-                </li>
-            </ul>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" data-toggle="dropdown">
+                    Tontine
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
+                    <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
+                    <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
+                </div>
+            </li>
+        </ul>
 
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="javascript:void(0);" onclick="confirmLogout();">
-                        Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </nav>
-
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white d-flex align-items-center" href="#" style="gap: 8px;">
+                    <div style="background-color: #ffffff; color: #007bff; font-weight: bold; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1rem; text-transform: uppercase;">
+                        <?php echo strtoupper(substr($user['firstname'], 0, 1) . substr($user['lastname'], 0, 1)); ?>
+                    </div>
+                    <?php echo htmlspecialchars($user_name); ?>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link position-relative font-weight-bold text-white" href="#">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge"><?php echo $total_notifications; ?></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white" href="setting.php">
+                    <i class="fas fa-cog"></i>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link font-weight-bold text-white" href="#" onclick="confirmLogout()">
+                    <i class="fas fa-sign-out-alt"></i> Log Out
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
     <!-- Main Content -->
     <div class="container">
         <h1 class="text-center">Contributions for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
