@@ -151,7 +151,7 @@ try {
 
     <!-- Main Content -->
     <div class="container">
-        <h1 class="text-center">Your Penalties for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
+        <h1 class="text-center">Your Penalties for  <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
         <?php if (!empty($penalties)): ?>
             <table class="table table-bordered table-striped">
                 <thead>

@@ -340,7 +340,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
                 'occurrence' => $occurrence,
                 'all_valid_dates' => $all_expected_dates
             ],
-            'redirect_url' => 'joined_tontine.php'
+            'redirect_url' => 'contribution_success.php?id=' . $tontine_id
         ]);
 
     } catch (Exception $e) {
