@@ -293,7 +293,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             'missed_amount' => $total_missed_amount,
             'penalties_applied' => $penalty_count,
             'penalty_amount' => $total_penalty,
-            'redirect_url' => 'joined_tontine.php'
+            'debug_info' => [
+                'expected_dates' => $contribution_dates,
+                'contributed_dates' => $contributed_dates,
+                'missed_dates' => array_values($missed_dates),
+                'join_date' => $join_date,
+                'today' => $today,
+                'occurrence' => $occurrence,
+                'all_valid_dates' => $all_expected_dates
+            ],
+            'redirect_url' => 'contribution_success.php?id=' . $tontine_id
         ]);
 
     } catch (Exception $e) {
