@@ -97,7 +97,7 @@ try {
     
     <style>
         :root {
-            --primary-color: #1e40af;
+            --primary-color: #1c64d1ff;
             --primary-hover: #1d4ed8;
             --secondary-color: #64748b;
             --success-color: #10b981;

@@ -129,95 +129,278 @@ try {
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.4.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #f8f9fc;
+            --success-color: #1cc88a;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --dark-color: #5a5c69;
+        }
+        
         body {
             background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
         }
-        .container {
-            margin-top: 50px;
+        
+        .navbar {
+            background: linear-gradient(90deg, var(--primary-color) 0%, #2a3e9d 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .dashboard-container {
+            margin-top: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .page-header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        
+        .payment-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            border: none;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .payment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: 600;
+            padding: 15px 20px;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .payment-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #e3e6f0;
+        }
+        
+        .payment-detail:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .detail-label {
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            text-align: right;
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-approved {
+            background-color: rgba(28, 200, 138, 0.2);
+            color: var(--success-color);
+        }
+        
+        .status-pending {
+            background-color: rgba(246, 194, 62, 0.2);
+            color: var(--warning-color);
+        }
+        
+        .status-failure {
+            background-color: rgba(231, 74, 59, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .pagination-container {
+            margin-top: 30px;
+        }
+        
+        .page-link {
+            color: var(--primary-color);
+            border: 1px solid #ddd;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .empty-state i {
+            font-size: 5rem;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state p {
+            color: #999;
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+        }
+        
+        .back-button {
+            background-color: #fff;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 8px 20px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .back-button:hover {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+        
         footer {
             margin-top: 50px;
             text-align: center;
-            color: black;
-            font-weight: bold;
+            color: var(--dark-color);
+            font-weight: 500;
             font-size: 0.9rem;
+            padding: 20px 0;
+            border-top: 1px solid #e3e6f0;
+        }
+        
+        @media (max-width: 768px) {
+            .payment-detail {
+                flex-direction: column;
+            }
+            
+            .detail-value {
+                text-align: left;
+                margin-top: 5px;
+            }
         }
     </style>
 </head>
 <body>
+   
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
-                </li>
-                <!-- Add other navbar items here -->
-            </ul>
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="javascript:void(0);" onclick="confirmLogout();">
-                        Logout
+    <div class="container dashboard-container">
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="h3 mb-0">Your Loan Payments</h1>
+                    <p class="mb-0 text-muted">For: <?php echo htmlspecialchars($tontine['tontine_name']); ?></p>
+                </div>
+                <div class="col-md-6 text-md-right">
+                    <a href="tontines.php" class="back-button">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Tontines
                     </a>
-                </li>
-            </ul>
+                </div>
+            </div>
         </div>
-    </nav>
-
-    <div class="container mt-1">
-        <h1 class="text-center">Your Loan Payments for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
 
         <?php if (!empty($loanPayments)): ?>
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Loan Amount</th>
-                        <th>Interest Rate</th>
-                        <th>Total Amount</th>
-                        <th>Monthly Payment Amount</th>
-                        <th>Payment Date</th>
-                        <th>Payment Status</th>
-                        <th>Phone Number</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($loanPayments as $payment): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($payment['id']); ?></td>
-                            <td><?php echo htmlspecialchars($payment['loan_amount']); ?></td>
-                            <td><?php echo htmlspecialchars($payment['interest_rate']); ?>%</td>
-                            <td><?php echo htmlspecialchars($payment['total_amount']); ?></td>
-                            <td><?php echo htmlspecialchars($payment['amount']); ?></td>
-                            <td><?php echo htmlspecialchars($payment['payment_date']); ?></td>
-                            <td><?php echo htmlspecialchars($payment['payment_status']); ?></td>
-                            <td><?php echo htmlspecialchars($payment['phone_number']); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+            <?php foreach ($loanPayments as $payment): 
+                // Determine status class
+                $statusClass = '';
+                if ($payment['payment_status'] == 'Approved') {
+                    $statusClass = 'status-approved';
+                } elseif ($payment['payment_status'] == 'Pending') {
+                    $statusClass = 'status-pending';
+                } else {
+                    $statusClass = 'status-failure';
+                }
+            ?>
+                <div class="card payment-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>Payment #<?php echo htmlspecialchars($payment['id']); ?></span>
+                        <span class="status-badge <?php echo $statusClass; ?>">
+                            <?php echo htmlspecialchars($payment['payment_status']); ?>
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="payment-detail">
+                            <span class="detail-label">Loan Amount:</span>
+                            <span class="detail-value"><?php echo htmlspecialchars($payment['loan_amount']); ?></span>
+                        </div>
+                        <div class="payment-detail">
+                            <span class="detail-label">Interest Rate:</span>
+                            <span class="detail-value"><?php echo htmlspecialchars($payment['interest_rate']); ?>%</span>
+                        </div>
+                        <div class="payment-detail">
+                            <span class="detail-label">Total Amount:</span>
+                            <span class="detail-value"><?php echo htmlspecialchars($payment['total_amount']); ?></span>
+                        </div>
+                        <div class="payment-detail">
+                            <span class="detail-label">Monthly Payment:</span>
+                            <span class="detail-value"><?php echo htmlspecialchars($payment['amount']); ?></span>
+                        </div>
+                        <div class="payment-detail">
+                            <span class="detail-label">Payment Date:</span>
+                            <span class="detail-value"><?php echo htmlspecialchars($payment['payment_date']); ?></span>
+                        </div>
+                        <div class="payment-detail">
+                            <span class="detail-label">Phone Number:</span>
+                            <span class="detail-value"><?php echo htmlspecialchars($payment['phone_number']); ?></span>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
 
             <!-- Pagination -->
-            <div class="text-center">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination">
-                        <?php for ($i = 1; $i <= ceil($totalCount / $perPage); $i++): ?>
-                            <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                                <a class="page-link" href="?id=<?php echo $tontine_id; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                            </li>
-                        <?php endfor; ?>
-                    </ul>
-                </nav>
-            </div>
+            <?php if (ceil($totalCount / $perPage) > 1): ?>
+                <div class="pagination-container">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            <?php for ($i = 1; $i <= ceil($totalCount / $perPage); $i++): ?>
+                                <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
+                                    <a class="page-link" href="?id=<?php echo $tontine_id; ?>&page=<?php echo $i; ?>">
+                                        <?php echo $i; ?>
+                                    </a>
+                                </li>
+                            <?php endfor; ?>
+                        </ul>
+                    </nav>
+                </div>
+            <?php endif; ?>
         <?php else: ?>
-            <p class="text-center">No loan payments found.</p>
+            <div class="empty-state">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <p>No loan payments found for this tontine.</p>
+                <a href="tontines.php" class="btn btn-primary">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Tontines
+                </a>
+            </div>
         <?php endif; ?>
     </div>
+
+    
 
     <script>
         function confirmLogout() {
@@ -226,6 +409,8 @@ try {
                 text: "You will be logged out of your account.",
                 icon: 'warning',
                 showCancelButton: true,
+                confirmButtonColor: '#4e73df',
+                cancelButtonColor: '#d33',
                 confirmButtonText: 'Yes, log out',
                 cancelButtonText: 'No, stay logged in',
                 reverseButtons: true
