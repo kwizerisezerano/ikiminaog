@@ -446,7 +446,7 @@ try {
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="user_profile.php"><i class="fas fa-home"></i> Home</a></li>
-                            <li class="breadcrumb-item"><a href="joined_tontine.php">Tontines</a></li>
+                            <li class="breadcrumb-item"> <a href="tontine_profile_member.php?id=<?php echo $tontine_id; ?>">Back to tontine profile</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Contribution Schedule</li>
                         </ol>
                     </nav>

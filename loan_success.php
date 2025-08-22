@@ -36,23 +36,73 @@ try {
     ]);
     $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-    // Fetch loan requests for the logged-in user in the given tontine with pagination
+    // Enhanced query to include payment information
     $stmt = $pdo->prepare("
-        SELECT lr.id, lr.loan_amount, lr.interest_rate, lr.interest_amount, lr.total_amount, 
-               lr.payment_frequency, lr.payment_date, lr.status, lr.phone_number, lr.created_at, lr.late_loan_repayment_amount
+        SELECT 
+            lr.id, 
+            lr.loan_amount, 
+            lr.interest_rate, 
+            lr.interest_amount, 
+            lr.total_amount, 
+            lr.payment_frequency, 
+            lr.payment_date, 
+            lr.status, 
+            lr.phone_number, 
+            lr.created_at, 
+            lr.late_loan_repayment_amount,
+            COALESCE(SUM(lp.amount + COALESCE(lp.late_amount, 0)), 0) as total_paid,
+            (lr.total_amount + COALESCE(lr.late_loan_repayment_amount, 0)) as total_due,
+            COUNT(lp.id) as payment_count
         FROM loan_requests lr
+        LEFT JOIN loan_payments lp ON lr.id = lp.loan_id AND lp.payment_status = 'Approved'
         WHERE lr.tontine_id = :tontine_id
         AND lr.user_id = :user_id
+        GROUP BY lr.id, lr.loan_amount, lr.interest_rate, lr.interest_amount, 
+                 lr.total_amount, lr.payment_frequency, lr.payment_date, 
+                 lr.status, lr.phone_number, lr.created_at, lr.late_loan_repayment_amount
         ORDER BY lr.created_at DESC
         LIMIT :start, :perPage
     ");
     $stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
-    $stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);  // Filter by logged-in user
+    $stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
     $stmt->bindValue(':start', $start, PDO::PARAM_INT);
     $stmt->bindValue(':perPage', $perPage, PDO::PARAM_INT);
     $stmt->execute();
 
     $loans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Process each loan to add payment information for display
+    foreach ($loans as &$loan) {
+        $loan['remaining_balance'] = max(0, $loan['total_due'] - $loan['total_paid']);
+        
+        // Determine display status (without changing database)
+        if ($loan['total_paid'] >= $loan['total_due']) {
+            $loan['display_status'] = 'Fully Paid';
+            $loan['status_class'] = 'paid';
+            $loan['status_icon'] = 'fas fa-check-double';
+        } elseif ($loan['total_paid'] > 0) {
+            $loan['display_status'] = 'Partially Paid';
+            $loan['status_class'] = 'partial';
+            $loan['status_icon'] = 'fas fa-coins';
+        } else {
+            $loan['display_status'] = $loan['status'];
+            // Keep original status styling
+            if (strtolower($loan['status']) === 'approved') {
+                $loan['status_class'] = 'approved';
+                $loan['status_icon'] = 'fas fa-check-circle';
+            } elseif (strtolower($loan['status']) === 'rejected') {
+                $loan['status_class'] = 'rejected';
+                $loan['status_icon'] = 'fas fa-times-circle';
+            } else {
+                $loan['status_class'] = 'pending';
+                $loan['status_icon'] = 'fas fa-clock';
+            }
+        }
+        
+        // Calculate payment progress percentage
+        $loan['payment_progress'] = $loan['total_due'] > 0 ? 
+            min(100, ($loan['total_paid'] / $loan['total_due']) * 100) : 0;
+    }
 
     // Fetch tontine details
     $tontineStmt = $pdo->prepare("SELECT tontine_name FROM tontine WHERE id = :id");
@@ -423,6 +473,46 @@ try {
             color: #1e40af;
         }
 
+        .status-partial {
+            background: rgba(245, 158, 11, 0.1);
+            color: #92400e;
+        }
+
+        /* Payment Progress Bar */
+        .payment-progress {
+            margin-top: 0.75rem;
+        }
+
+        .payment-progress .progress {
+            height: 6px;
+            border-radius: 3px;
+            background-color: rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .payment-progress .progress-bar {
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        .payment-info {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .payment-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .payment-summary small {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
         /* Amount Display */
         .amount-display {
             font-weight: 600;
@@ -691,24 +781,23 @@ try {
                         <div class="loan-card-header">
                             <div class="loan-id">
                                 <span class="loan-number">#<?php echo str_pad($loan['id'], 4, '0', STR_PAD_LEFT); ?></span>
-                                <?php 
-                                $statusClass = 'status-pending';
-                                $statusIcon = 'fas fa-clock';
-                                if (strtolower($loan['status']) === 'approved') {
-                                    $statusClass = 'status-approved';
-                                    $statusIcon = 'fas fa-check-circle';
-                                } elseif (strtolower($loan['status']) === 'rejected') {
-                                    $statusClass = 'status-rejected';
-                                    $statusIcon = 'fas fa-times-circle';
-                                } elseif (strtolower($loan['status']) === 'paid') {
-                                    $statusClass = 'status-paid';
-                                    $statusIcon = 'fas fa-check-double';
-                                }
-                                ?>
-                                <span class="status-badge <?php echo $statusClass; ?>">
-                                    <i class="<?php echo $statusIcon; ?>"></i>
-                                    <?php echo htmlspecialchars($loan['status']); ?>
+                                <span class="status-badge status-<?php echo $loan['status_class']; ?>">
+                                    <i class="<?php echo $loan['status_icon']; ?>"></i>
+                                    <?php echo htmlspecialchars($loan['display_status']); ?>
                                 </span>
+                                
+                                <?php if ($loan['payment_progress'] > 0): ?>
+                                    <div class="payment-progress">
+                                        <div class="payment-summary">
+                                            <small class="text-muted">Payment Progress</small>
+                                            <small class="text-primary fw-bold"><?php echo number_format($loan['payment_progress'], 1); ?>%</small>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar <?php echo $loan['payment_progress'] >= 100 ? 'bg-success' : 'bg-primary'; ?>" 
+                                                 style="width: <?php echo $loan['payment_progress']; ?>%"></div>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <div class="loan-date">
                                 <small class="text-muted">
@@ -800,6 +889,43 @@ try {
                                 </div>
                             </div>
 
+                            <?php if ($loan['total_paid'] > 0): ?>
+                                <div class="payment-info">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="loan-detail">
+                                                <div class="detail-label">
+                                                    <i class="fas fa-money-check text-success"></i>
+                                                    Amount Paid
+                                                </div>
+                                                <div class="detail-value amount-display">
+                                                    RWF <?php echo number_format($loan['total_paid'], 2); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="loan-detail">
+                                                <div class="detail-label">
+                                                    <i class="fas fa-balance-scale text-warning"></i>
+                                                    Remaining Balance
+                                                </div>
+                                                <div class="detail-value <?php echo $loan['remaining_balance'] > 0 ? 'text-warning' : 'text-success'; ?>">
+                                                    RWF <?php echo number_format($loan['remaining_balance'], 2); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php if ($loan['payment_count'] > 0): ?>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                <?php echo $loan['payment_count']; ?> payment(s) made
+                                            </small>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
                             <?php if ($loan['late_loan_repayment_amount'] > 0): ?>
                                 <div class="late-fee-notice">
                                     <div class="alert alert-warning d-flex align-items-center mb-0">
@@ -814,18 +940,46 @@ try {
 
                         <div class="loan-card-footer">
                             <div class="total-amount">
-                                <div class="total-label">Total Amount Due</div>
-                                <div class="total-value">
-                                    RWF <?php echo number_format($loan['total_amount'] + ($loan['late_loan_repayment_amount'] ?? 0), 2); ?>
-                                </div>
+                                <?php if ($loan['total_paid'] > 0): ?>
+                                    <?php if ($loan['remaining_balance'] > 0): ?>
+                                        <div class="total-label">Remaining Balance</div>
+                                        <div class="total-value text-warning">
+                                            RWF <?php echo number_format($loan['remaining_balance'], 2); ?>
+                                        </div>
+                                        <small class="text-muted">
+                                            Paid: RWF <?php echo number_format($loan['total_paid'], 2); ?> of 
+                                            RWF <?php echo number_format($loan['total_due'], 2); ?>
+                                        </small>
+                                    <?php else: ?>
+                                        <div class="total-label">Loan Status</div>
+                                        <div class="total-value text-success">
+                                            <i class="fas fa-check-circle me-2"></i>Fully Paid
+                                        </div>
+                                        <small class="text-muted">
+                                            Total Paid: RWF <?php echo number_format($loan['total_paid'], 2); ?>
+                                        </small>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <div class="total-label">Total Amount Due</div>
+                                    <div class="total-value">
+                                        RWF <?php echo number_format($loan['total_due'], 2); ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <div class="action-buttons">
-                                <a href="#" 
-                                   onclick="handlePayment(<?php echo $loan['id']; ?>, <?php echo $loan['total_amount']; ?>, '<?php echo $loan['payment_date']; ?>', <?php echo $loan['late_loan_repayment_amount']; ?>, '<?php echo urlencode($loan['phone_number']); ?>', <?php echo $tontine_id; ?>)" 
-                                   class="btn-pay-large">
-                                    <i class="fas fa-credit-card"></i>
-                                    Pay Now
-                                </a>
+                                <?php if ($loan['remaining_balance'] > 0): ?>
+                                    <a href="#" 
+                                       onclick="handlePayment(<?php echo $loan['id']; ?>, <?php echo $loan['remaining_balance']; ?>, '<?php echo $loan['payment_date']; ?>', 0, '<?php echo urlencode($loan['phone_number']); ?>', <?php echo $tontine_id; ?>)" 
+                                       class="btn-pay-large">
+                                        <i class="fas fa-credit-card"></i>
+                                        <?php echo $loan['total_paid'] > 0 ? 'Pay Remaining' : 'Pay Now'; ?>
+                                    </a>
+                                <?php else: ?>
+                                    <span class="btn-pay-large" style="background: #6b7280; cursor: not-allowed;">
+                                        <i class="fas fa-check"></i>
+                                        Paid in Full
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -919,7 +1073,7 @@ try {
                 html: `
                     <div class="text-start p-3">
                         <div class="row mb-3">
-                            <div class="col-6"><strong>Loan Amount:</strong></div>
+                            <div class="col-6"><strong>Amount to Pay:</strong></div>
                             <div class="col-6 text-end">RWF ${parseFloat(amount).toLocaleString()}</div>
                         </div>
                         ${lateAmount > 0 ? `

@@ -132,147 +132,489 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Penalty Payments</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.4.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #3b82f6;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --light-bg: #f8fafc;
+            --dark-text: #1e293b;
+            --light-text: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e2e8f0 100%);
+            font-family: 'Inter', sans-serif;
+            color: var(--dark-text);
+            min-height: 100vh;
         }
-        .container {
-            margin-top: 50px;
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
         }
-        footer {
-            margin-top: 50px;
+
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1" fill="white" opacity="0.1"/><circle cx="90" cy="20" r="1.5" fill="white" opacity="0.1"/><circle cx="20" cy="80" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="90" r="1.5" fill="white" opacity="0.1"/></svg>');
+            pointer-events: none;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .page-title i {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.75rem;
+            border-radius: 12px;
+            font-size: 1.5rem;
+        }
+
+        .tontine-name {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .modern-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .modern-table thead {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        }
+
+        .modern-table thead th {
+            color: white;
+            font-weight: 600;
+            padding: 1.25rem 1rem;
+            text-align: left;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            position: relative;
+        }
+
+        .modern-table thead th:first-child {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        .modern-table thead th:last-child {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .modern-table tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modern-table tbody tr:hover {
+            background-color: #f1f5f9;
+            transform: translateY(-1px);
+        }
+
+        .modern-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .modern-table tbody td {
+            padding: 1.25rem 1rem;
+            font-size: 0.875rem;
+            color: var(--dark-text);
+            vertical-align: middle;
+        }
+        .breadcrumb-nav {
+            margin-bottom: 1rem;
+        }
+
+        .breadcrumb {
+            background: transparent;
+            margin-bottom: 0;
+            padding: 0;
+        }
+
+        .breadcrumb-item a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .breadcrumb-item a:hover {
+            color: white;
+        }
+
+        .breadcrumb-item.active {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .row-number {
+            background: var(--primary-color);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .status-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .status-approved {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-failure {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-unknown {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+
+        .amount-cell {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .modern-pagination {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .modern-pagination .page-link {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            color: var(--secondary-color);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 2.75rem;
             text-align: center;
-            color: black;
-            font-weight: bold;
-            font-size: 0.9rem;
+        }
+
+        .modern-pagination .page-link:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .modern-pagination .page-link.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--light-text);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem 0.5rem;
+            }
+
+            .header-section {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .modern-table thead th,
+            .modern-table tbody td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            .user-info {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.25rem;
+            }
+
+            .user-avatar {
+                width: 2rem;
+                height: 2rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body>
-     <!-- Navbar -->
-     <!-- Your Navbar HTML remains the same -->
-
-    <!-- Main Content -->
-     <!-- Navbar -->
-     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Tontine
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
-                        <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
-                        <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                        <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section fade-in">
+            <div class="header-content">
+                   <nav class="breadcrumb-nav">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="user_profile.php">
+                                <i class="fas fa-home me-1"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="tontine_profile_member.php?id=<?php echo $tontine_id; ?>">Tontine Profile</a>
+                        </li>
+                      
+                    </ol>
+                </nav>  
+                <h1 class="page-title">
+           
+                    <div>
+                      
+                        <div>Penalty Payments</div>
+                        <div class="tontine-name"><?php echo htmlspecialchars($tontine['tontine_name'] ?? 'Unknown Tontine'); ?></div>
                     </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Contributions
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
-                        <a class="dropdown-item" href="#">Send contributions</a>
-                        <a class="dropdown-item" href="#">View Total Contributions</a>
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Loans
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="loansDropdown">
-                        <a class="dropdown-item" href="#">View loan status</a>
-                        <a class="dropdown-item" href="#">Apply for loan</a>
-                        <a class="dropdown-item" href="#">Pay for loan</a>
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Penalties
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
-                        <a class="dropdown-item" href="#">View Paid Penalties</a>
-                        <a class="dropdown-item" href="#">View Unpaid Penalties</a>
-                        <a class="dropdown-item" href="#">Pay Penalties</a>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
-                </li>
-            </ul>
-
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="javascript:void(0);" onclick="confirmLogout();">
-                        Logout
-                    </a>
-                </li>
-            </ul>
+                </h1>
+            </div>
         </div>
-    </nav>
 
-    <div class="container mt-1">
-        <h1 class="text-center">Your Penalty Payments for <?php echo htmlspecialchars($tontine['tontine_name']); ?></h1>
-        <?php if (!empty($payments)): ?>
-        <table class="table table-bordered table-striped">
-            <thead>
-                <tr>
-                    <th>Penalty ID</th>
-                    <th>User</th>
-                    <th>Reason</th>
-                    <th>Amount</th>
-                    <th>Phone Number</th>
-                    <th>Payment Status</th>
-                    <th>Transaction Ref</th>
-                    <th>Payment Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($payments as $payment): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($payment['penalty_id']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['firstname'] . ' ' . $payment['lastname']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['reason']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['amount']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['phone_number']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['payment_status']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['transaction_ref']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['payment_date']); ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <!-- Content Card -->
+        <div class="content-card fade-in">
+            <?php if (!empty($payments)): ?>
+                <div class="table-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Penalty ID</th>
+                                <th>User</th>
+                                <th>Reason</th>
+                                <th>Amount</th>
+                                <th>Phone Number</th>
+                                <th>Status</th>
+                                <th>Payment Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            $rowNumber = $start + 1; // Start numbering from the correct position for pagination
+                            foreach ($payments as $payment): 
+                            ?>
+                            <tr>
+                                <td>
+                                    <div class="row-number"><?php echo $rowNumber++; ?></div>
+                                </td>
+                                <td><strong>#<?php echo htmlspecialchars($payment['penalty_id']); ?></strong></td>
+                                <td>
+                                    <div class="user-info">
+                                        <div class="user-avatar">
+                                            <?php 
+                                            $initials = strtoupper(substr($payment['firstname'], 0, 1) . substr($payment['lastname'], 0, 1));
+                                            echo htmlspecialchars($initials); 
+                                            ?>
+                                        </div>
+                                        <div>
+                                            <div><strong><?php echo htmlspecialchars($payment['firstname'] . ' ' . $payment['lastname']); ?></strong></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><?php echo htmlspecialchars($payment['reason'] ?? 'N/A'); ?></td>
+                                <td>
+                                    <div class="amount-cell">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <?php echo htmlspecialchars(number_format($payment['amount'], 2)); ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <i class="fas fa-phone"></i>
+                                    <?php echo htmlspecialchars($payment['phone_number']); ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                    $status = strtolower($payment['payment_status']);
+                                    $statusClass = match($status) {
+                                        'approved' => 'status-approved',
+                                        'pending' => 'status-pending',
+                                        'failure', 'failed' => 'status-failure',
+                                        default => 'status-unknown'
+                                    };
+                                    ?>
+                                    <span class="status-badge <?php echo $statusClass; ?>">
+                                        <?php echo htmlspecialchars($payment['payment_status']); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <?php echo date('M d, Y', strtotime($payment['payment_date'])); ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
 
-        <!-- Pagination -->
-        <div class="text-center">
-            <nav aria-label="Page navigation">
-                <ul class="pagination">
-                    <?php for ($i = 1; $i <= ceil($totalCount / $perPage); $i++): ?>
-                    <li class="page-item <?php echo $i == $page ? 'active' : ''; ?>">
-                        <a class="page-link" href="?id=<?php echo $tontine_id; ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                    </li>
-                    <?php endfor; ?>
-                </ul>
-            </nav>
+                <!-- Pagination -->
+                <?php if (ceil($totalCount / $perPage) > 1): ?>
+                <div class="pagination-container">
+                    <div class="modern-pagination">
+                        <?php for ($i = 1; $i <= ceil($totalCount / $perPage); $i++): ?>
+                            <a href="?id=<?php echo $tontine_id; ?>&page=<?php echo $i; ?>" 
+                               class="page-link <?php echo $i == $page ? 'active' : ''; ?>">
+                                <?php echo $i; ?>
+                            </a>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <h3>No Penalty Payments Found</h3>
+                    <p>You don't have any penalty payments recorded for this tontine yet.</p>
+                </div>
+            <?php endif; ?>
         </div>
-        <?php else: ?>
-        <p class="text-center">No penalty payments found.</p>
-        <?php endif; ?>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function confirmLogout() {
             Swal.fire({
@@ -282,13 +624,26 @@ try {
                 showCancelButton: true,
                 confirmButtonText: 'Yes, log out',
                 cancelButtonText: 'No, stay logged in',
-                reverseButtons: true
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-danger me-2',
+                    cancelButton: 'btn btn-secondary'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     window.location.href = 'logout.php';
                 }
             });
         }
+
+        // Add loading animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
     </script>
 </body>
 </html>

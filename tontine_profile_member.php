@@ -767,16 +767,26 @@ if ($creator) {
                                 <i class="fas fa-times-circle"></i>
                                 Missed Contributions
                             </a>
+                            <a href="paid_missed_contribution.php?id=<?php echo $id; ?>" class="mgmt-btn">
+                                <i class="fas fa-times-circle"></i>
+                               Paid Missed Contributions
+                            </a>
                             
-                            <a href="penalties_contribution.php?id=<?php echo $id; ?>" class="mgmt-btn">
+                            <!-- <a href="penalties_contribution.php?id=<?php echo $id; ?>" class="mgmt-btn">
                                 <i class="fas fa-exclamation-triangle"></i>
                                 Penalties for Contributions
-                            </a>
+                            </a> -->
                             
                             <a href="missed_penalties.php?id=<?php echo $id; ?>" class="mgmt-btn">
                                 <i class="fas fa-warning"></i>
                                 Missed Penalties
                             </a>
+                              <a href="paid_missed_penalties.php?id=<?php echo $id; ?>" class="mgmt-btn">
+                                <i class="fas fa-times-circle"></i>
+                                Paid Missed Penalties
+                            </a>
+                            
+                            
                             
                             <a href="loan_success.php?id=<?php echo $id; ?>" class="mgmt-btn">
                                 <i class="fas fa-money-bill-wave"></i>
