@@ -701,12 +701,12 @@ if ($creator) {
                             <div class="editable-field">
                                 <strong>Purpose:</strong>
                                 <input type="text" class="edit-input" id="purpose-field" value="<?php echo htmlspecialchars(isset($purpose) && !empty($purpose) ? $purpose : 'Describe your purpose'); ?>">
-                                <i class="fas fa-pencil-alt edit-btn" onclick="editField('purpose')"></i>
+                               
                             </div>
                             <div class="editable-field">
                                 <strong>Rules:</strong>
                                 <input type="text" class="edit-input" id="rules-field" value="<?php echo htmlspecialchars(isset($rules) && !empty($rules) ? $rules : 'Describe your rules'); ?>">
-                                <i class="fas fa-pencil-alt edit-btn" onclick="editField('rules')"></i>
+                               
                             </div>
                         </div>
                     </div>
