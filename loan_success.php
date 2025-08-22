@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 $tontine_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
 if (!$tontine_id) {
-    header("Location: tontines.php");
+    header("Location: user_profile.php");
     exit();
 }
 
@@ -80,12 +80,15 @@ try {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Add SweetAlert2 BEFORE any custom scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         :root {
              --primary-color: #1c64d1ff;
             --primary-hover: #1d4ed8;
             --secondary-color: #64748b;
-            --success-color: #10b981;
+            --success-color: #103db9ff;
             --warning-color: #f59e0b;
             --danger-color: #ef4444;
             --info-color: #3b82f6;
@@ -387,14 +390,6 @@ try {
             box-shadow: var(--shadow-lg);
         }
 
-        /* Remove old table styles */
-        .table-container,
-        .table-header,
-        .table-responsive,
-        .table {
-            display: none;
-        }
-
         /* Status Badges */
         .status-badge {
             display: inline-flex;
@@ -443,7 +438,7 @@ try {
 
         /* Action Buttons */
         .btn-pay {
-            background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+            background: linear-gradient(135deg, var(--success-color) 0%, #052796ff 100%);
             color: white;
             border: none;
             padding: 0.375rem 0.75rem;
@@ -644,7 +639,7 @@ try {
                             </a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="tontines.php">Tontines</a>
+                            <a href="tontine_profile_member.php?id=<?php echo $tontine_id; ?>">Tontine Profile</a>
                         </li>
                         <li class="breadcrumb-item active">Your Loan Requests</li>
                     </ol>
@@ -825,7 +820,8 @@ try {
                                 </div>
                             </div>
                             <div class="action-buttons">
-                                <a href="pay_now.php?loan_id=<?php echo $loan['id']; ?>&amount=<?php echo $loan['total_amount']; ?>&payment_date=<?php echo urlencode($loan['payment_date']); ?>&late_amount=<?php echo $loan['late_loan_repayment_amount']; ?>&phone=<?php echo urlencode($loan['phone_number']); ?>&tontine_id=<?php echo $tontine_id; ?>" 
+                                <a href="#" 
+                                   onclick="handlePayment(<?php echo $loan['id']; ?>, <?php echo $loan['total_amount']; ?>, '<?php echo $loan['payment_date']; ?>', <?php echo $loan['late_loan_repayment_amount']; ?>, '<?php echo urlencode($loan['phone_number']); ?>', <?php echo $tontine_id; ?>)" 
                                    class="btn-pay-large">
                                     <i class="fas fa-credit-card"></i>
                                     Pay Now
@@ -878,8 +874,8 @@ try {
                 <h4>No Loan Requests Found!</h4>
                 <p>You haven't made any loan requests for this tontine yet. Start by submitting your first loan application!</p>
                 <div class="mt-3">
-                    <a href="tontines.php" class="btn btn-primary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Tontines
+                    <a href="tontines.php?id=<?php echo $tontine_id; ?>" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Tontine Profile
                     </a>
                 </div>
             </div>
@@ -888,63 +884,152 @@ try {
 
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
-        // Fade-in animation
-        document.addEventListener('DOMContentLoaded', function() {
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
+        // Replace all alert() calls with SweetAlert2
+        function showPaymentAlert(message, type = 'warning') {
+            const iconMap = {
+                'warning': 'warning',
+                'error': 'error',
+                'success': 'success',
+                'info': 'info'
             };
-
-            const observer = new IntersectionObserver(function(entries) {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, observerOptions);
-
-            document.querySelectorAll('.fade-in').forEach(el => {
-                observer.observe(el);
+            
+            Swal.fire({
+                title: 'Payment Status',
+                text: message,
+                icon: iconMap[type] || 'info',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#007bff',
+                customClass: {
+                    popup: 'rounded-lg'
+                }
             });
+        }
+
+        // Enhanced payment handling function
+        function handlePayment(loanId, amount, paymentDate, lateAmount, phone, tontineId) {
+            // First check if payment is already made (you might want to add an AJAX call here)
+            // For now, we'll assume you want to show the confirmation dialog
+            
+            const totalAmount = parseFloat(amount) + parseFloat(lateAmount || 0);
+            
+            Swal.fire({
+                title: 'Confirm Loan Payment',
+                html: `
+                    <div class="text-start p-3">
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Loan Amount:</strong></div>
+                            <div class="col-6 text-end">RWF ${parseFloat(amount).toLocaleString()}</div>
+                        </div>
+                        ${lateAmount > 0 ? `
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Late Fee:</strong></div>
+                            <div class="col-6 text-end text-warning">RWF ${parseFloat(lateAmount).toLocaleString()}</div>
+                        </div>
+                        ` : ''}
+                        <hr>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Total Amount:</strong></div>
+                            <div class="col-6 text-end text-primary"><strong>RWF ${totalAmount.toLocaleString()}</strong></div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><strong>Phone:</strong></div>
+                            <div class="col-6 text-end">${decodeURIComponent(phone)}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6"><strong>Due Date:</strong></div>
+                            <div class="col-6 text-end">${new Date(paymentDate).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-credit-card me-2"></i>Proceed to Payment',
+                cancelButtonText: '<i class="fas fa-times me-2"></i>Cancel',
+                confirmButtonColor: '#102fb9ff',
+                cancelButtonColor: '#6b7280',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'btn btn-success btn-lg mx-2',
+                    cancelButton: 'btn btn-secondary btn-lg mx-2',
+                    popup: 'rounded-lg'
+                },
+                buttonsStyling: false,
+                backdrop: 'rgba(0,0,0,0.4)',
+                width: '500px'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show processing message
+                    Swal.fire({
+                        title: 'Redirecting to Payment',
+                        html: `
+                            <div class="text-center p-3">
+                                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <h5 class="text-primary mb-3">Please wait...</h5>
+                                <p class="text-muted">Preparing your secure payment page</p>
+                                <small class="text-warning">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Do not close this window
+                                </small>
+                            </div>
+                        `,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        backdrop: 'rgba(0,0,0,0.6)',
+                        customClass: {
+                            popup: 'rounded-lg'
+                        }
+                    });
+                    
+                    // Redirect after delay
+                    setTimeout(() => {
+                        const paymentUrl = `pay_now.php?loan_id=${loanId}&amount=${amount}&payment_date=${encodeURIComponent(paymentDate)}&late_amount=${lateAmount}&phone=${phone}&tontine_id=${tontineId}`;
+                        window.location.href = paymentUrl;
+                    }, 2000);
+                }
+            });
+        }
+
+        // Check for payment status messages from URL parameters (if any)
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const status = urlParams.get('status');
+            const message = urlParams.get('message');
+            
+            if (status && message) {
+                const statusType = status === 'success' ? 'success' : 
+                                  status === 'error' ? 'error' : 
+                                  status === 'warning' ? 'warning' : 'info';
+                
+                showPaymentAlert(decodeURIComponent(message), statusType);
+                
+                // Clean up URL
+                const cleanUrl = window.location.pathname + '?id=' + urlParams.get('id');
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
         });
 
-        // Enhanced payment confirmation
-        document.querySelectorAll('.btn-pay').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                const url = new URL(this.href);
-                const amount = url.searchParams.get('amount');
-                const lateAmount = url.searchParams.get('late_amount');
-                const totalAmount = parseFloat(amount) + parseFloat(lateAmount || 0);
-                
-                Swal.fire({
-                    title: 'Confirm Loan Payment',
-                    html: `
-                        <div class="text-start">
-                            <p><strong>Loan Amount:</strong> RWF ${parseFloat(amount).toFixed(2)}</p>
-                            ${lateAmount > 0 ? `<p><strong>Late Fee:</strong> RWF ${parseFloat(lateAmount).toFixed(2)}</p>` : ''}
-                            <hr>
-                            <p><strong>Total Amount:</strong> RWF ${totalAmount.toFixed(2)}</p>
-                        </div>
-                    `,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, Pay Now',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonColor: '#10b981',
-                    cancelButtonColor: '#6b7280',
-                    reverseButtons: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = this.href;
-                    }
-                });
+        // Fade-in animation
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
             });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
         });
 
         // Tooltip initialization
@@ -952,6 +1037,25 @@ try {
         const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        // Handle any existing payment alerts that might be triggered by PHP
+        <?php if (isset($_GET['payment_status'])): ?>
+            document.addEventListener('DOMContentLoaded', function() {
+                <?php if ($_GET['payment_status'] === 'duplicate'): ?>
+                    showPaymentAlert("A payment for this loan has already been made or is pending.", 'warning');
+                <?php elseif ($_GET['payment_status'] === 'error'): ?>
+                    showPaymentAlert("There was an error processing your payment. Please try again.", 'error');
+                <?php elseif ($_GET['payment_status'] === 'success'): ?>
+                    Swal.fire({
+                        title: 'Payment Successful!',
+                        text: 'Your loan payment has been processed successfully.',
+                        icon: 'success',
+                        confirmButtonText: 'Great!',
+                        confirmButtonColor: '#103db9ff'
+                    });
+                <?php endif; ?>
+            });
+        <?php endif; ?>
     </script>
 </body>
 </html>

@@ -2,13 +2,20 @@
 session_start();
 require 'config.php';
 
+// Initialize variables for alert handling
+$show_alert = false;
+$alert_type = '';
+$alert_title = '';
+$alert_message = '';
+$redirect_url = '';
+
 // Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
-    echo "<script>
-            alert('You must be logged in to access this page.');
-            window.location.href = 'index.php';
-          </script>";
-    exit();
+    $show_alert = true;
+    $alert_type = 'error';
+    $alert_title = 'Access Denied';
+    $alert_message = 'You must be logged in to access this page.';
+    $redirect_url = 'index.php';
 }
 
 // Get the loan ID, amount, payment date, late repayment amount, and tontine_id from the URL
@@ -16,105 +23,107 @@ $loan_id = isset($_GET['loan_id']) ? (int)$_GET['loan_id'] : null;
 $amountgot = isset($_GET['amount']) ? (float)$_GET['amount'] : null;
 $amount = isset($_POST['amount']) ? (float)$_POST['amount'] : null;
 $payment_date = isset($_GET['payment_date']) ? $_GET['payment_date'] : null;
-$late_amount = isset($_GET['late_amount']) ? (float)$_GET['late_amount'] : 0.0;  // Optional late repayment amount
-$tontine_id = isset($_GET['tontine_id']) ? (int)$_GET['tontine_id'] : null; // Get tontine_id
-$phone_number = isset($_GET['phone']) ? $_GET['phone'] : null; // Get phone number (Allow string, not cast to int)
+$late_amount = isset($_GET['late_amount']) ? (float)$_GET['late_amount'] : 0.0;
+$tontine_id = isset($_GET['tontine_id']) ? (int)$_GET['tontine_id'] : null;
+$phone_number = isset($_GET['phone']) ? $_GET['phone'] : null;
 
-$transaction_ref = bin2hex(random_bytes(16));  // Generate a unique transaction reference
+$transaction_ref = bin2hex(random_bytes(16));
 
 // Validate required parameters
-if (!$loan_id || !$payment_date || !$tontine_id) {
-    echo "<script>
-            alert('Required parameters are missing.');
-           window.location.href = 'loan_success.php?id=$tontine_id';
-          </script>";
-    exit();
+if (!$show_alert && (!$loan_id || !$payment_date || !$tontine_id)) {
+    $show_alert = true;
+    $alert_type = 'warning';
+    $alert_title = 'Missing Information';
+    $alert_message = 'Required payment parameters are missing. Please try again.';
+    $redirect_url = "loan_success.php?id=$tontine_id";
 }
 
-try {
-    // Fetch loan details from the database
-    $loanStmt = $pdo->prepare("SELECT * FROM loan_requests WHERE id = :loan_id AND user_id = :user_id AND tontine_id = :tontine_id");
-    $loanStmt->bindParam(':loan_id', $loan_id, PDO::PARAM_INT);
-    $loanStmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
-    $loanStmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
-    $loanStmt->execute();
+$loan = null;
 
-    $loan = $loanStmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$loan) {
-        echo "<script>
-                alert('Loan not found.');
-                 window.location.href = 'loan_success.php?id=$tontine_id';
-              </script>";
-        exit();
-    }
-    // Calculate the monthly payment
- 
-    $monthlyPayment = round($amountgot  / 12, 2);
+if (!$show_alert) {
+    try {
+        // Fetch loan details from the database
+        $loanStmt = $pdo->prepare("SELECT * FROM loan_requests WHERE id = :loan_id AND user_id = :user_id AND tontine_id = :tontine_id");
+        $loanStmt->bindParam(':loan_id', $loan_id, PDO::PARAM_INT);
+        $loanStmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
+        $loanStmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+        $loanStmt->execute();
 
-    // **Check for duplicate payment**:
-    $checkPaymentStmt = $pdo->prepare("SELECT * FROM loan_payments WHERE tontine_id = :tontine_id AND loan_id = :loan_id AND user_id = :user_id AND (payment_status = 'Approved' OR payment_status = 'Pending')");
-    $checkPaymentStmt->bindParam(':loan_id', $loan_id, PDO::PARAM_INT);
-    $checkPaymentStmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
-    $checkPaymentStmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
-    $checkPaymentStmt->execute();
+        $loan = $loanStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$loan) {
+            $show_alert = true;
+            $alert_type = 'error';
+            $alert_title = 'Loan Not Found';
+            $alert_message = 'The requested loan could not be found or you do not have permission to access it.';
+            $redirect_url = "loan_success.php?id=$tontine_id";
+        } else {
+            // Calculate the monthly payment
+            $monthlyPayment = round($amountgot / 12, 2);
 
-    // If a payment already exists (either pending or completed), prevent insertion
-    if ($checkPaymentStmt->rowCount() > 0) {
-        echo "<script>
-                alert('A payment for this loan has already been made or is pending.');
-            window.location.href = 'loan_success.php?id=$tontine_id';
-              </script>";
-        exit();
-    }
+            // Check for duplicate payment
+            $checkPaymentStmt = $pdo->prepare("SELECT * FROM loan_payments WHERE tontine_id = :tontine_id AND loan_id = :loan_id AND user_id = :user_id AND (payment_status = 'Approved' OR payment_status = 'Pending')");
+            $checkPaymentStmt->bindParam(':loan_id', $loan_id, PDO::PARAM_INT);
+            $checkPaymentStmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
+            $checkPaymentStmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+            $checkPaymentStmt->execute();
 
-    // Proceed with the payment if no existing payment record
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        // Capture the phone number entered by the user
-        $phone_number = isset($_POST['phone_number']) ? $_POST['phone_number'] : '';
+            // If a payment already exists, prevent insertion
+            if ($checkPaymentStmt->rowCount() > 0) {
+                $show_alert = true;
+                $alert_type = 'info';
+                $alert_title = 'Payment Already Exists';
+                $alert_message = 'A payment for this loan has already been submitted and is either approved or pending approval.';
+                $redirect_url = "loan_success.php?id=$tontine_id";
+            }
 
-        // Process the payment (this assumes payment is successful and will be marked as 'Unpaid' initially)
-        $pay = hdev_payment::pay($phone_number, $amount, $transaction_ref);
+            // Process form submission
+            if (!$show_alert && $_SERVER['REQUEST_METHOD'] == 'POST') {
+                $phone_number = isset($_POST['phone_number']) ? $_POST['phone_number'] : '';
 
-        if ($pay->status !== 'success') {
-            echo "<script>
-                    alert('Payment failed: " . $pay->message . "');
-                 window.location.href = 'loan_success.php?id=$tontine_id';
-                  </script>";
-            exit();
+                // Process the payment
+                $pay = hdev_payment::pay($phone_number, $amount, $transaction_ref);
+
+                if ($pay->status !== 'success') {
+                    $show_alert = true;
+                    $alert_type = 'error';
+                    $alert_title = 'Payment Status';
+                    $alert_message = 'Payment is Pending: ' . htmlspecialchars($pay->message);
+                    $redirect_url = "loan_success.php?id=$tontine_id";
+                } else {
+                    // Insert the payment details
+                    $paymentStmt = $pdo->prepare("
+                        INSERT INTO loan_payments (user_id, loan_id, amount, payment_date, payment_status, transaction_ref, late_amount, tontine_id, phone_number)
+                        VALUES (:user_id, :loan_id, :amount, :payment_date, 'Pending', :transaction_ref, :late_amount, :tontine_id, :phone_number)
+                    ");
+
+                    $paymentStmt->execute([
+                        'user_id' => $_SESSION['user_id'],
+                        'loan_id' => $loan_id,
+                        'amount' => round($amount),
+                        'payment_date' => $payment_date,
+                        'transaction_ref' => $transaction_ref,
+                        'late_amount' => round($late_amount),
+                        'tontine_id' => $tontine_id,
+                        'phone_number' => $phone_number
+                    ]);
+
+                    $show_alert = true;
+                    $alert_type = 'success';
+                    $alert_title = 'Payment Successful initated!';
+                    $alert_message = 'Your loan payment has been submitted successfully and is being processed.';
+                    $redirect_url = "paid_loan_list.php?id=$tontine_id";
+                }
+            }
         }
 
-        // Insert the payment details into the loan_payments table
-        $paymentStmt = $pdo->prepare("
-            INSERT INTO loan_payments (user_id, loan_id, amount, payment_date, payment_status, transaction_ref, late_amount, tontine_id, phone_number)
-            VALUES (:user_id, :loan_id, :amount, :payment_date, 'Pending', :transaction_ref, :late_amount, :tontine_id, :phone_number)
-        ");
-
-        $paymentStmt->execute([
-            'user_id' => $_SESSION['user_id'],
-            'loan_id' => $loan_id,
-            'amount' => round($amount), // Ensure amount is an integer
-            'payment_date' => $payment_date,
-            'transaction_ref' => $transaction_ref,
-            'late_amount' => round($late_amount), // Ensure late amount is an integer
-            'tontine_id' => $tontine_id,
-            'phone_number' => $phone_number
-        ]);
-
-        // Payment successful, now redirect the user back to their loan list page
-        echo "<script>
-                alert('Payment successful!');
-                 window.location.href = 'paid_loan_list.php?id=$tontine_id';
-              </script>";
-        exit();
+    } catch (PDOException $e) {
+        $show_alert = true;
+        $alert_type = 'error';
+        $alert_title = 'System Error';
+        $alert_message = 'A database error occurred. Please try again later.';
+        $redirect_url = "loan_success.php?id=$tontine_id";
     }
-
-} catch (PDOException $e) {
-    echo "<script>
-            alert('Error: " . htmlspecialchars($e->getMessage()) . "');
-          window.location.href = 'loan_success.php?id=$tontine_id';
-          </script>";
-    exit();
 }
 ?>
 
@@ -125,7 +134,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loan Payment</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.4.4/dist/umd/popper.min.js"></script>
@@ -270,20 +279,6 @@ try {
             background: white;
         }
 
-        .input-group-text {
-            background: #007bff;
-            color: white;
-            border: 2px solid #007bff;
-            font-weight: 700;
-            padding: 15px 20px;
-            border-radius: 12px 0 0 12px;
-        }
-
-        .input-group .form-control {
-            border-left: none;
-            border-radius: 0 12px 12px 0;
-        }
-
         .pay-btn {
             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
             border: none;
@@ -368,16 +363,6 @@ try {
             font-weight: 700;
         }
 
-        .phone-display {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 15px 20px;
-            text-align: center;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
         @media (max-width: 576px) {
             body {
                 padding: 10px;
@@ -398,7 +383,6 @@ try {
             }
         }
 
-        /* Loading animation */
         .loading-spinner {
             display: inline-block;
             width: 20px;
@@ -413,7 +397,6 @@ try {
             to { transform: rotate(360deg); }
         }
 
-        /* Pulse animation for pay button */
         @keyframes pulse {
             0% { box-shadow: 0 10px 30px rgba(0, 123, 255, 0.3); }
             50% { box-shadow: 0 10px 40px rgba(0, 123, 255, 0.5); }
@@ -422,6 +405,30 @@ try {
 
         .pay-btn {
             animation: pulse 3s infinite;
+        }
+
+        /* Custom SweetAlert2 styling */
+        .swal2-popup {
+            border-radius: 20px !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .swal2-title {
+            font-weight: 700 !important;
+            color: #2c3e50 !important;
+        }
+
+        .swal2-confirm {
+            border-radius: 25px !important;
+            padding: 12px 30px !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        .swal2-cancel {
+            border-radius: 25px !important;
+            padding: 12px 30px !important;
+            font-weight: 600 !important;
         }
     </style>
 </head>
@@ -442,7 +449,7 @@ try {
             </div>
 
             <div class="card-body">
-                <?php if ($loan): ?>
+                <?php if ($loan && !$show_alert): ?>
                     <div class="amount-display">
                         <div class="amount-label">Monthly Payment Amount</div>
                         <div class="amount-value">RWF <?php echo number_format((floor($monthlyPayment) == $monthlyPayment) ? $monthlyPayment : ceil($monthlyPayment), 2); ?></div>
@@ -473,13 +480,77 @@ try {
                         </div>
                     </form>
                 <?php else: ?>
-                    <p class="text-danger text-center">Loan details could not be found.</p>
+                    <div class="text-center">
+                        <div class="payment-icon" style="background: rgba(220, 53, 69, 0.1); border: 2px solid #dc3545; margin: 0 auto 20px;">
+                            <i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>
+                        </div>
+                        <h4 style="color: #dc3545; margin-bottom: 15px;">Unable to Process Payment</h4>
+                        <p class="text-muted">There was an issue loading the loan details. Please try again or contact support.</p>
+                        <a href="loan_success.php?id=<?php echo $tontine_id; ?>" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left mr-2"></i>Go Back
+                        </a>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 
     <script>
+        // Show professional alerts if needed
+        <?php if ($show_alert): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            const alertConfig = {
+                'success': {
+                    icon: 'success',
+                    iconColor: '#28a745',
+                    confirmButtonColor: '#28a745'
+                },
+                'error': {
+                    icon: 'error',
+                    iconColor: '#dc3545',
+                    confirmButtonColor: '#dc3545'
+                },
+                'warning': {
+                    icon: 'warning',
+                    iconColor: '#ffc107',
+                    confirmButtonColor: '#ffc107'
+                },
+                'info': {
+                    icon: 'info',
+                    iconColor: '#17a2b8',
+                    confirmButtonColor: '#17a2b8'
+                }
+            };
+
+            const config = alertConfig['<?php echo $alert_type; ?>'] || alertConfig['info'];
+            
+            Swal.fire({
+                title: '<?php echo $alert_title; ?>',
+                text: '<?php echo $alert_message; ?>',
+                icon: config.icon,
+                iconColor: config.iconColor,
+                confirmButtonText: '<i class="fas fa-check mr-2"></i>OK',
+                confirmButtonColor: config.confirmButtonColor,
+                customClass: {
+                    popup: 'rounded-lg shadow-lg',
+                    confirmButton: 'btn-lg px-4'
+                },
+                backdrop: 'rgba(0,0,0,0.4)',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showClass: {
+                    popup: 'animate__animated animate__fadeInUp animate__faster'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '<?php echo $redirect_url; ?>';
+                }
+            });
+        });
+        <?php endif; ?>
+
+        // Payment confirmation logic
+        <?php if ($loan && !$show_alert): ?>
         document.getElementById('payBtn').addEventListener('click', function(e) {
             e.preventDefault();
             
@@ -491,8 +562,29 @@ try {
                     title: 'Missing Information',
                     text: 'Please enter your phone number to proceed with payment.',
                     icon: 'warning',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#007bff'
+                    iconColor: '#ffc107',
+                    confirmButtonText: '<i class="fas fa-check mr-2"></i>OK',
+                    confirmButtonColor: '#ffc107',
+                    customClass: {
+                        popup: 'rounded-lg'
+                    }
+                });
+                return;
+            }
+            
+            // Phone number validation
+            const phoneRegex = /^(\+?250|0)?[0-9]{9}$/;
+            if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+                Swal.fire({
+                    title: 'Invalid Phone Number',
+                    text: 'Please enter a valid Rwandan phone number.',
+                    icon: 'warning',
+                    iconColor: '#ffc107',
+                    confirmButtonText: '<i class="fas fa-check mr-2"></i>OK',
+                    confirmButtonColor: '#ffc107',
+                    customClass: {
+                        popup: 'rounded-lg'
+                    }
                 });
                 return;
             }
@@ -502,32 +594,38 @@ try {
                 html: `
                     <div class="text-center">
                         <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #007bff; border-radius: 15px; padding: 25px; margin: 20px 0;">
-                            <div style="color: #6c757d; font-size: 14px; margin-bottom: 8px;">Amount</div>
+                            <div style="color: #6c757d; font-size: 14px; margin-bottom: 8px;">Payment Amount</div>
                             <div style="color: #007bff; font-size: 28px; font-weight: 700;">RWF ${amount.toLocaleString()}</div>
                         </div>
                         <div style="background: #f8f9fa; border-radius: 10px; padding: 15px; margin: 15px 0;">
-                            <strong style="color: #2c3e50;">Phone:</strong> <span style="color: #007bff; font-weight: 600;">${phoneNumber}</span>
+                            <div style="color: #2c3e50; margin-bottom: 5px;"><strong>Phone Number:</strong></div>
+                            <div style="color: #007bff; font-weight: 600; font-size: 16px;">${phoneNumber}</div>
                         </div>
-                        <p style="color: #6c757d; margin-top: 20px;">Are you sure you want to proceed with this loan payment?</p>
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 10px; padding: 15px; margin: 15px 0;">
+                            <div style="color: #856404; font-size: 14px;">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                You will receive an SMS prompt to complete the payment
+                            </div>
+                        </div>
                     </div>
                 `,
                 icon: 'question',
+                iconColor: '#007bff',
                 showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-credit-card mr-2"></i>Yes, Pay Now',
+                confirmButtonText: '<i class="fas fa-credit-card mr-2"></i>Proceed with Payment',
                 cancelButtonText: '<i class="fas fa-times mr-2"></i>Cancel',
                 confirmButtonColor: '#007bff',
                 cancelButtonColor: '#6c757d',
                 reverseButtons: true,
                 customClass: {
-                    confirmButton: 'btn btn-primary btn-lg mx-2',
-                    cancelButton: 'btn btn-secondary btn-lg mx-2',
-                    popup: 'rounded-lg'
+                    popup: 'rounded-lg',
+                    confirmButton: 'btn-lg mx-2',
+                    cancelButton: 'btn-lg mx-2'
                 },
-                buttonsStyling: false,
                 backdrop: 'rgba(0,0,0,0.4)'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Show loading on button
+                    // Show loading state
                     const payBtn = document.getElementById('payBtn');
                     const btnText = document.getElementById('btnText');
                     const btnSpinner = document.getElementById('btnSpinner');
@@ -536,7 +634,7 @@ try {
                     btnText.textContent = 'Processing...';
                     btnSpinner.classList.remove('d-none');
                     
-                    // Show loading SweetAlert
+                    // Show processing alert
                     Swal.fire({
                         title: 'Processing Payment',
                         html: `
@@ -546,10 +644,12 @@ try {
                                 </div>
                                 <h5 style="color: #007bff; margin-bottom: 15px;">Please wait...</h5>
                                 <p class="text-muted">We are processing your payment securely</p>
-                                <small class="text-warning">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i>
-                                    Do not close this window or go back
-                                </small>
+                                <div style="background: #fff3cd; border-radius: 10px; padding: 15px; margin-top: 15px;">
+                                    <small style="color: #856404;">
+                                        <i class="fas fa-mobile-alt mr-1"></i>
+                                        Check your phone for payment confirmation
+                                    </small>
+                                </div>
                             </div>
                         `,
                         allowOutsideClick: false,
@@ -561,15 +661,16 @@ try {
                         }
                     });
                     
-                    // Submit the form after a short delay
+                    // Submit form after delay
                     setTimeout(() => {
                         document.getElementById('paymentForm').submit();
                     }, 2000);
                 }
             });
         });
+        <?php endif; ?>
 
-        // Add subtle animations on page load
+        // Page load animation
         window.addEventListener('load', function() {
             const card = document.querySelector('.payment-card');
             card.style.opacity = '0';
