@@ -268,55 +268,112 @@ $total_contributions = $tontine['total_contributions'];
         });
         <?php endif; ?>
 
-        $('#joinForm').on('submit', function(e) {
-            e.preventDefault();
+       $('#joinForm').on('submit', function(e) {
+    e.preventDefault();
 
-            // Check if there are validation errors
-            <?php if (!empty($validation_error)): ?>
+    // Check if there are validation errors
+    <?php if (!empty($validation_error)): ?>
+    Swal.fire({
+        title: 'Access Denied',
+        text: '<?php echo addslashes($validation_error); ?>',
+        icon: 'warning',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#007bff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '<?php echo $redirect_url; ?>';
+        }
+    });
+    return;
+    <?php endif; ?>
+
+    // Disable submit button to prevent double submission
+    const submitBtn = $('#submitBtn');
+    const originalText = submitBtn.text();
+    submitBtn.prop('disabled', true).text('Processing...');
+
+    $.ajax({
+        url: 'submit_contribution.php',
+        type: 'POST',
+        data: $(this).serialize(),
+        dataType: 'json', // Expect JSON response
+        timeout: 30000, // 30 second timeout
+        success: function(response) {
+            console.log('Server response:', response);
+            
+            // Validate response structure
+            if (!response || typeof response !== 'object') {
+                throw new Error('Invalid response format');
+            }
+
+            if (!response.status || !response.title || !response.message) {
+                throw new Error('Missing required response fields');
+            }
+
             Swal.fire({
-                title: 'Access Denied',
-                text: '<?php echo addslashes($validation_error); ?>',
-                icon: 'warning',
-                confirmButtonText: 'OK',
+                title: response.title,
+                text: response.message,
+                icon: response.status === 'success' ? 'success' : 'error',
                 confirmButtonColor: '#007bff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = '<?php echo $redirect_url; ?>';
+            }).then(() => {
+                if (response.status === 'success' && response.redirect_url) {
+                    window.location.href = response.redirect_url;
                 }
             });
-            return;
-            <?php endif; ?>
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error Details:', {
+                xhr: xhr,
+                status: status,
+                error: error,
+                responseText: xhr.responseText
+            });
 
-            $.ajax({
-                url: 'submit_contribution.php',
-                type: 'POST',
-                data: $(this).serialize(),
-                success: function(response) {
-                    console.log(response);  // Log the response to see what is returned
-                    try {
-                        const res = JSON.parse(response);
+            let errorMessage = 'An unexpected error occurred. Please try again.';
+            let errorTitle = 'Connection Error';
 
-                        Swal.fire({
-                            title: res.title,
-                            text: res.message,
-                            icon: res.status === 'success' ? 'success' : 'error',
-                            confirmButtonColor: '#007bff'
-                        }).then(() => {
-                            if (res.status === 'success' && res.redirect_url) {
-                                window.location.href = res.redirect_url;
-                            }
-                        });
-                    } catch (e) {
-                        Swal.fire({
-                            title: 'Parsing Error',
-                            text: 'Unexpected response from server.',
-                            icon: 'error',
-                            confirmButtonColor: '#007bff'
-                        });
+            // Try to parse error response
+            if (xhr.responseText) {
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    if (errorResponse.message) {
+                        errorMessage = errorResponse.message;
+                        errorTitle = errorResponse.title || 'Error';
                     }
+                } catch (parseError) {
+                    console.error('Could not parse error response:', parseError);
+                    errorMessage = 'Server returned an invalid response. Please check your connection and try again.';
                 }
+            }
+
+            // Handle specific error types
+            if (status === 'timeout') {
+                errorMessage = 'Request timed out. Please check your internet connection and try again.';
+                errorTitle = 'Timeout Error';
+            } else if (status === 'parsererror') {
+                errorMessage = 'Server response could not be processed. Please try again.';
+                errorTitle = 'Processing Error';
+            } else if (xhr.status === 500) {
+                errorMessage = 'Server error occurred. Please try again later.';
+                errorTitle = 'Server Error';
+            } else if (xhr.status === 404) {
+                errorMessage = 'Service not found. Please refresh the page.';
+                errorTitle = 'Not Found';
+            }
+
+            Swal.fire({
+                title: errorTitle,
+                text: errorMessage,
+                icon: 'error',
+                confirmButtonColor: '#007bff'
             });
-        });
+        },
+        complete: function() {
+            // Re-enable submit button
+            submitBtn.prop('disabled', false).text(originalText);
+        }
+    });
+});
 
         function confirmLogout() {
             Swal.fire({
