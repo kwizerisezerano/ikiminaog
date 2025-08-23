@@ -113,13 +113,10 @@ try {
 
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">Penalty Details</h5>
+           
 
             <?php if ($penalty): ?>
-                <p><strong>Tontine ID:</strong> <?php echo htmlspecialchars($tontine_id); ?></p>
-                <p><strong>Penalty Amount:</strong> $<?php echo number_format($penalty['penalty_amount'], 2); ?></p>
-                <p><strong>Reason:</strong> <?php echo htmlspecialchars($penalty['reason']); ?></p>
-                <p><strong>Missed Contribution Date:</strong> <?php echo htmlspecialchars($penalty['missed_contribution_date']); ?></p>
+              
                 <p><strong>Phone Number:</strong> <?php echo htmlspecialchars($phone_number); ?></p>
 
                 <form action="pay_penalty.php?penalty_id=<?php echo $penalty_id; ?>&tontine_id=<?php echo $tontine_id; ?>&amount=<?php echo $amount; ?>&phone=<?php echo urlencode($phone_number); ?>" method="POST">

@@ -2,29 +2,45 @@
 session_start();
 require 'config.php';
 
-// Check if user is logged in
+// Check if user is logged in - redirect to login if not
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    header("Location: login.php");
+    exit();
+}
+
+// Additional security check for session validation
+if (empty($_SESSION['user_id']) || !is_numeric($_SESSION['user_id'])) {
+    session_destroy();
+    header("Location: login.php");
     exit();
 }
 
 // Fetch user ID from session
 $user_id = $_SESSION['user_id'];
 
-// Fetch user details
-$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image, idno, behalf_name, behalf_phone_number, idno_picture, otp_behalf_used FROM users WHERE id = :id");
-$stmt->bindParam(':id', $user_id);
+// Fetch user details with error handling
+$stmt = $pdo->prepare("SELECT firstname, lastname, phone_number, image, idno, behalf_name, behalf_phone_number, idno_picture, otp_behalf_used FROM users WHERE id = :id ");
+$stmt->bindParam(':id', $user_id, PDO::PARAM_INT);
 $stmt->execute();
 
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$user) {
-    header("Location: index.php");
+    // User not found or inactive - logout and redirect
+    session_destroy();
+    header("Location: login.php?error=invalid_user");
     exit();
 }
-$user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
+
+$user_name = htmlspecialchars(trim($user['firstname'] . ' ' . $user['lastname']));
+$user_phone = htmlspecialchars($user['phone_number']);
+$user_image = !empty($user['image']) ? htmlspecialchars($user['image']) : 'default-avatar.png';
 
 // Get tontine ID from the URL
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+if ($tontine_id <= 0) {
+    die("Invalid tontine ID provided.");
+}
 
 // Fetch tontine details
 $stmt = $pdo->prepare("SELECT * FROM tontine WHERE id = :id");
@@ -37,50 +53,97 @@ if (!$tontine) {
     die("Tontine not found.");
 }
 
-// Get summary statistics for the specific tontine
-
-// Total users who joined the Tontine
-$stmt = $pdo->prepare("SELECT COUNT(*) AS total_users FROM tontine_join_requests WHERE tontine_id = :tontine_id AND status = 'Permitted'");
+// Check if user has permission to view this tontine (either owner or member)
+$stmt = $pdo->prepare("
+    SELECT COUNT(*) FROM tontine WHERE id = :tontine_id AND user_id = :user_id
+    UNION ALL
+    SELECT COUNT(*) FROM tontine_join_requests WHERE tontine_id = :tontine_id AND user_id = :user_id AND status = 'Permitted'
+");
 $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
 $stmt->execute();
-$total_users = $stmt->fetchColumn();
+$results = $stmt->fetchAll(PDO::FETCH_COLUMN);
+$has_permission = (array_sum($results) > 0);
 
-// Total contributions (sum of the 'amount' field)
-$stmt = $pdo->prepare("SELECT SUM(amount) AS total_contributions FROM contributions WHERE tontine_id = :tontine_id AND payment_status='Approved'");
+if (!$has_permission) {
+    // Log unauthorized access attempt
+    error_log("Unauthorized tontine access attempt - User ID: $user_id, Tontine ID: $tontine_id, IP: " . $_SERVER['REMOTE_ADDR']);
+    
+    // Redirect with error message instead of dying
+    header("Location: dashboard.php?error=access_denied");
+    exit();
+}
+
+
+
+// Total contributions (sum of approved contributions)
+$stmt = $pdo->prepare("SELECT SUM(amount) AS total_contributions FROM contributions WHERE tontine_id = :tontine_id AND payment_status='Approved' AND user_id =:user_id");
 $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
 $stmt->execute();
-$total_contributions = $stmt->fetchColumn();
+$total_contributions = $stmt->fetchColumn() ?: 0;
+
 
 // Total loan requests (approved)
-$stmt = $pdo->prepare("SELECT SUM(loan_amount) AS total_loan_requests FROM loan_requests WHERE tontine_id = :tontine_id AND status = 'Approved'");
+$stmt = $pdo->prepare("SELECT SUM(loan_amount) AS total_loan_requests FROM loan_requests WHERE tontine_id = :tontine_id AND status = 'Approved' AND user_id =:user_id");
 $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
 $stmt->execute();
-$total_loan_requests = $stmt->fetchColumn();
+$total_loan_requests = $stmt->fetchColumn() ?: 0;
 
 // Total loan payments (approved)
-$stmt = $pdo->prepare("SELECT SUM(amount) AS total_loan_payments FROM loan_payments WHERE tontine_id = :tontine_id AND payment_status = 'Approved'");
+$stmt = $pdo->prepare("SELECT SUM(amount) AS total_loan_payments FROM loan_payments WHERE tontine_id = :tontine_id AND payment_status = 'Approved' AND user_id =:user_id");
 $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
 $stmt->execute();
-$total_loan_payments = $stmt->fetchColumn();
+$total_loan_payments = $stmt->fetchColumn() ?: 0;
 
-// Missed contributions that are unpaid
-$stmt = $pdo->prepare("SELECT COUNT(*) AS unpaid_missed_contributions FROM missed_contribution_payment WHERE tontine_id = :tontine_id AND payment_status = 'Failure' OR payment_status = 'Pending' ");
+// Get missed contributions statistics
+$stmt = $pdo->prepare("
+    SELECT 
+        COUNT(CASE WHEN status = 'Unpaid' THEN 1 END) as unpaid_count,
+        COALESCE(SUM(CASE WHEN status = 'Unpaid' THEN missed_amount ELSE 0 END), 0) as unpaid_amount,
+        COUNT(CASE WHEN status = 'Paid' THEN 1 END) as paid_count,
+        COALESCE(SUM(CASE WHEN status = 'Paid' THEN missed_amount ELSE 0 END), 0) as paid_amount
+    FROM missed_contributions 
+    WHERE tontine_id = :tontine_id AND user_id =:user_id
+");
 $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
 $stmt->execute();
-$unpaid_missed_contributions = $stmt->fetchColumn();
+$missed_contributions_stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Missed contributions that are paid
-$stmt = $pdo->prepare("SELECT COUNT(*) AS paid_missed_contributions FROM missed_contributions WHERE tontine_id = :tontine_id AND status = 'Paid'");
+$unpaid_missed_contributions_count = $missed_contributions_stats['unpaid_count'];
+$unpaid_missed_contributions_amount = $missed_contributions_stats['unpaid_amount'];
+$paid_missed_contributions_count = $missed_contributions_stats['paid_count'];
+$paid_missed_contributions_amount = $missed_contributions_stats['paid_amount'];
+
+// Legacy variables for backward compatibility
+$unpaid_missed_contributions = $unpaid_missed_contributions_count;
+$paid_missed_contributions = $paid_missed_contributions_count;
+
+// Get penalties statistics
+$stmt = $pdo->prepare("
+    SELECT 
+        COUNT(CASE WHEN status = 'Unpaid' THEN 1 END) as unpaid_count,
+        COALESCE(SUM(CASE WHEN status = 'Unpaid' THEN penalty_amount ELSE 0 END), 0) as unpaid_amount,
+        COUNT(CASE WHEN status = 'Paid' THEN 1 END) as paid_count,
+        COALESCE(SUM(CASE WHEN status = 'Paid' THEN penalty_amount ELSE 0 END), 0) as paid_amount
+    FROM penalties 
+    WHERE tontine_id = :tontine_id AND user_id =:user_id
+");
 $stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
 $stmt->execute();
-$paid_missed_contributions = $stmt->fetchColumn();
+$penalties_stats = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Calculate total dividends (example calculation, could be based on contributions)
-$dividend_percentage = 0.1; // 10% dividend (for example)
-$total_dividends = $total_contributions * $dividend_percentage; // Adjust the formula as needed
+$unpaid_penalties_count = $penalties_stats['unpaid_count'];
+$unpaid_penalties_amount = $penalties_stats['unpaid_amount'];
+$paid_penalties_count = $penalties_stats['paid_count'];
+$paid_penalties_amount = $penalties_stats['paid_amount'];
 
-// Total notifications (as an example)
-$total_notifications = 5;
+
+
 
 ?>
 
@@ -89,11 +152,11 @@ $total_notifications = 5;
 <head>
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tontine Dashboard</title>
+    <title>Tontine Dashboard - <?php echo htmlspecialchars($tontine['tontine_name']); ?></title>
       <!-- Font Awesome (only one version needed) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-<!-- Bootstrap 5 (the latest version is recommended) -->
+<!-- Bootstrap 4 -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.5.2/css/bootstrap.min.css">
 
 <!-- SweetAlert2 -->
@@ -102,411 +165,414 @@ $total_notifications = 5;
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- Bootstrap 4 Bundle (you can remove this if you only want to use Bootstrap 5) -->
+<!-- Bootstrap 4 Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-    <style>
-        :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1d4ed8;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --info-color: #3b82f6;6
-            --dark-color: #1f2937;
-            --light-color: #f8fafc;
-            --gradient-primary: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --gradient-info: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-            --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
-        }
+<style> 
+:root { 
+    --primary-color: #2563eb; 
+    --secondary-color: #1d4ed8; 
+    --success-color: #10b981; 
+    --warning-color: #f59e0b; 
+    --danger-color: #ef4444; 
+    --info-color: #3b82f6; 
+    --dark-color: #1f2937; 
+    --light-color: #f8fafc; 
+    --gradient-primary: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
+    --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+    --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+    --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+    --gradient-info: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1); 
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1); 
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1); 
+    --shadow-xl: 0 20px 25px rgba(0,0,0,0.15); 
+} 
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+} 
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            line-height: 1.6;
-            color: var(--dark-color);
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            min-height: 100vh;
-        }
+body { 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+    line-height: 1.6; 
+    color: var(--dark-color); 
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); 
+    min-height: 100vh; 
+} 
 
-        /* Original Navbar Styles */
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -0px;
-            background-color: red;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 5px;
-            font-size: 0.80rem;
-        }
+/* Navbar Styles */ 
+.notification-badge { 
+    position: absolute; 
+    top: -5px; 
+    right: -0px; 
+    background-color: red; 
+    color: white; 
+    border-radius: 50%; 
+    padding: 2px 5px; 
+    font-size: 0.80rem; 
+} 
 
-        /* Dashboard Container */
-        .dashboard-container {
-            padding: 2rem 0;
-            min-height: calc(100vh - 80px);
-        }
+/* Dashboard Container */ 
+.dashboard-container { 
+    padding: 2rem 0; 
+    min-height: calc(100vh - 80px); 
+} 
 
-        .dashboard-header {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-lg);
-            position: relative;
-            overflow: hidden;
-        }
+.dashboard-header { 
+    background: white; 
+    border-radius: 20px; 
+    padding: 2rem; 
+    margin-bottom: 2rem; 
+    box-shadow: var(--shadow-lg); 
+    position: relative; 
+    overflow: hidden; 
+} 
 
-        .dashboard-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--gradient-primary);
-        }
+.dashboard-header::before { 
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    height: 4px; 
+    background: var(--gradient-primary); 
+} 
 
-        .dashboard-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
+/* Profile Link Styling */
+.profile-link {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    background: var(--gradient-primary);
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+}
 
-        .dashboard-subtitle {
-            color: #6b7280;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
+.profile-link:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    color: white;
+    text-decoration: none;
+}
 
-        /* Stats Cards Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
+.profile-link i {
+    margin-right: 0.5rem;
+}
 
-        .stat-card {
-            background: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow-md);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+.dashboard-title { 
+    font-size: 2.5rem; 
+    font-weight: 700; 
+    background: var(--gradient-primary); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+    background-clip: text; 
+    margin-bottom: 0.5rem; 
+    padding-right: 150px; /* Make space for the profile link */
+} 
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--gradient-primary);
-        }
+.dashboard-subtitle { 
+    color: #6b7280; 
+    font-size: 1.1rem; 
+    font-weight: 500; 
+} 
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-xl);
-        }
+/* Stats Cards Grid - Updated to show 3 cards per row */
+.stats-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 1.5rem; 
+    margin-bottom: 2rem; 
+} 
 
-        .stat-card.success::before {
-            background: var(--gradient-success);
-        }
+.stat-card { 
+    background: white; 
+    border-radius: 16px; 
+    padding: 1.5rem; 
+    box-shadow: var(--shadow-md); 
+    transition: all 0.3s ease; 
+    position: relative; 
+    overflow: hidden; 
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    height: 100%; /* Ensure equal height */
+} 
 
-        .stat-card.warning::before {
-            background: var(--gradient-warning);
-        }
+.stat-card::before { 
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    height: 3px; 
+    background: var(--gradient-primary); 
+} 
 
-        .stat-card.danger::before {
-            background: var(--gradient-danger);
-        }
+.stat-card:hover { 
+    transform: translateY(-5px); 
+    box-shadow: var(--shadow-xl); 
+} 
 
-        .stat-card.info::before {
-            background: var(--gradient-info);
-        }
+.stat-card.success::before { 
+    background: var(--gradient-success); 
+} 
 
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
+.stat-card.warning::before { 
+    background: var(--gradient-warning); 
+} 
 
-        .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            color: white;
-        }
+.stat-card.danger::before { 
+    background: var(--gradient-danger); 
+} 
 
-        .stat-icon.primary {
-            background: var(--gradient-primary);
-        }
+.stat-card.info::before { 
+    background: var(--gradient-info); 
+} 
 
-        .stat-icon.success {
-            background: var(--gradient-success);
-        }
+.stat-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 1rem; 
+} 
 
-        .stat-icon.warning {
-            background: var(--gradient-warning);
-        }
+.stat-icon { 
+    width: 50px; 
+    height: 50px; 
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 1.25rem; 
+    color: white; 
+} 
 
-        .stat-icon.danger {
-            background: var(--gradient-danger);
-        }
+.stat-icon.primary { 
+    background: var(--gradient-primary); 
+} 
 
-        .stat-icon.info {
-            background: var(--gradient-info);
-        }
+.stat-icon.success { 
+    background: var(--gradient-success); 
+} 
 
-        .stat-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+.stat-icon.warning { 
+    background: var(--gradient-warning); 
+} 
 
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--dark-color);
-            margin-bottom: 0.5rem;
-        }
+.stat-icon.danger { 
+    background: var(--gradient-danger); 
+} 
 
-        .stat-description {
-            font-size: 0.875rem;
-            color: #9ca3af;
-        }
+.stat-icon.info { 
+    background: var(--gradient-info); 
+} 
 
-        /* User Info Section */
-        .user-info-section {
-            background: white;
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: var(--shadow-lg);
-            margin-top: 2rem;
-        }
+.stat-title { 
+    font-size: 0.875rem; 
+    font-weight: 600; 
+    color: #6b7280; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+} 
 
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--dark-color);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
+.stat-value { 
+    font-size: 2rem; 
+    font-weight: 700; 
+    color: var(--dark-color); 
+    margin-bottom: 0.5rem; 
+} 
 
-        .section-title i {
-            color: var(--primary-color);
-        }
+.stat-description { 
+    font-size: 0.875rem; 
+    color: #9ca3af; 
+} 
 
-        .info-list {
-            list-style: none;
-            padding: 0;
-        }
+/* New styles for dual-metric cards */ 
+.dual-metric { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-end; 
+    gap: 1rem; 
+    margin-top: 0.5rem; 
+} 
 
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-            border-bottom: 1px solid #f3f4f6;
-            transition: all 0.3s ease;
-        }
+.metric { 
+    text-align: center; 
+} 
 
-        .info-item:last-child {
-            border-bottom: none;
-        }
+.metric-label { 
+    font-size: 0.75rem; 
+    color: #9ca3af; 
+    margin-bottom: 0.25rem; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+} 
 
-        .info-item:hover {
-            background: #f9fafb;
-            margin: 0 -1rem;
-            padding: 1rem;
-            border-radius: 8px;
-        }
+.metric-value { 
+    font-size: 1.2rem; 
+    font-weight: 700; 
+    color: var(--dark-color); 
+} 
 
-        .info-label {
-            font-weight: 600;
-            color: var(--dark-color);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+.metric-value.count { 
+    color: var(--primary-color); 
+} 
 
-        .info-value {
-            font-weight: 500;
-            color: #6b7280;
-            text-align: right;
-        }
+.metric-value.amount { 
+    color: var(--success-color); 
+} 
 
-        .info-value.currency {
-            color: var(--success-color);
-            font-weight: 700;
-        }
+/* Responsive Design */ 
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
 
-        .info-value.count {
-            background: var(--gradient-primary);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-        }
+@media (max-width: 768px) { 
+    .dashboard-title { 
+        font-size: 2rem;
+        padding-right: 0; /* Remove padding on mobile */
+    }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .dashboard-title {
-                font-size: 2rem;
-            }
+    .profile-link, .logout-btn {
+        position: static;
+        display: inline-block;
+        margin: 0.5rem 0.5rem 1rem 0;
+    }
 
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
+    .user-info {
+        position: static;
+        margin-bottom: 1rem;
+        flex-direction: row;
+    }
+    
+    .stats-grid { 
+        grid-template-columns: 1fr; 
+        gap: 1rem; 
+    } 
+    
+    .stat-card { 
+        padding: 1rem; 
+    } 
+    
+    .dashboard-header { 
+        padding: 1.5rem; 
+    } 
+    
+    .dual-metric { 
+        flex-direction: row; 
+        justify-content: space-around; 
+    } 
+} 
 
-            .stat-card {
-                padding: 1rem;
-            }
+/* Animation for loading */ 
+@keyframes fadeInUp { 
+    from { 
+        opacity: 0; 
+        transform: translateY(30px); 
+    } 
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    } 
+} 
 
-            .dashboard-header {
-                padding: 1.5rem;
-            }
+.fade-in-up { 
+    animation: fadeInUp 0.6s ease-out; 
+} 
 
-            .user-info-section {
-                padding: 1.5rem;
-            }
+/* Custom scrollbar */ 
+::-webkit-scrollbar { 
+    width: 8px; 
+} 
 
-            .info-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
+::-webkit-scrollbar-track { 
+    background: #f1f1f1; 
+    border-radius: 10px; 
+} 
 
-            .info-value {
-                text-align: left;
-            }
-        }
+::-webkit-scrollbar-thumb { 
+    background: var(--gradient-primary); 
+    border-radius: 10px; 
+} 
 
-        /* Animation for loading */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+::-webkit-scrollbar-thumb:hover { 
+    background: var(--gradient-secondary); 
+} 
 
-        .fade-in-up {
-            animation: fadeInUp 0.6s ease-out;
-        }
+/* User info display */
+.user-info {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+}
 
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
+.user-details i {
+    margin-right: 0.5rem;
+    color: var(--primary-color);
+}
 
-        ::-webkit-scrollbar-thumb {
-            background: var(--gradient-primary);
-            border-radius: 10px;
-        }
+.user-name {
+    font-weight: 600;
+    color: var(--dark-color);
+}
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--gradient-secondary);
-        }
-    </style>
+/* Logout button styling */
+.logout-btn {
+    position: absolute;
+    top: 2rem;
+    right: 200px; /* Position it to the left of profile link */
+    background: var(--gradient-danger);
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.logout-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    color: white;
+    text-decoration: none;
+}
+</style>
 </head>
 <body>
 
-      <!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="user_profile.php">Home</a>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" data-toggle="dropdown">
-                    Tontine
-                </a>
-                <div class="dropdown-menu">
-                    <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
-                    <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
-                    <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
-                </div>
-            </li>
-        </ul>
-
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white d-flex align-items-center" href="#" style="gap: 8px;">
-                    <div style="background-color: #ffffff; color: #007bff; font-weight: bold; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1rem; text-transform: uppercase;">
-                        <?php echo strtoupper(substr($user['firstname'], 0, 1) . substr($user['lastname'], 0, 1)); ?>
-                    </div>
-                    <?php echo htmlspecialchars($user_name); ?>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link position-relative font-weight-bold text-white" href="#">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge"><?php echo $total_notifications; ?></span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="setting.php">
-                    <i class="fas fa-cog"></i>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="#" onclick="confirmLogout()">
-                    <i class="fas fa-sign-out-alt"></i> Log Out
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
-
-
 <div class="container dashboard-container">
+    
     <!-- Dashboard Header -->
     <div class="dashboard-header fade-in-up">
+       
+        <a href="tontine_profile_member.php?id=<?php echo $tontine_id; ?>" class="profile-link">
+            <i class="fas fa-user-circle"></i>Tontine Profile 
+        </a>
         <h1 class="dashboard-title">
             <i class="fas fa-chart-line me-3"></i>Tontine Dashboard
         </h1>
@@ -517,6 +583,8 @@ $total_notifications = 5;
 
     <!-- Statistics Cards -->
     <div class="stats-grid">
+       
+        <!-- Total Contributions -->
         <div class="stat-card success fade-in-up">
             <div class="stat-header">
                 <div class="stat-icon success">
@@ -525,9 +593,11 @@ $total_notifications = 5;
             </div>
             <div class="stat-title">Total Contributions</div>
             <div class="stat-value">RWF <?php echo number_format($total_contributions, 0); ?></div>
-            <div class="stat-description">Approved contributions received</div>
+            <div class="stat-description">All approved contributions received</div>
         </div>
 
+        
+        <!-- Loan Requests -->
         <div class="stat-card info fade-in-up">
             <div class="stat-header">
                 <div class="stat-icon info">
@@ -539,6 +609,7 @@ $total_notifications = 5;
             <div class="stat-description">Total approved loans</div>
         </div>
 
+        <!-- Loan Payments -->
         <div class="stat-card primary fade-in-up">
             <div class="stat-header">
                 <div class="stat-icon primary">
@@ -550,104 +621,64 @@ $total_notifications = 5;
             <div class="stat-description">Total loan repayments</div>
         </div>
 
-        <div class="stat-card warning fade-in-up">
-            <div class="stat-header">
-                <div class="stat-icon warning">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-            </div>
-            <div class="stat-title">Estimated Dividends</div>
-            <div class="stat-value">RWF <?php echo number_format($total_dividends, 0); ?></div>
-            <div class="stat-description">10% of total contributions</div>
-        </div>
-
+        <!-- Missed Contributions -->
         <div class="stat-card danger fade-in-up">
             <div class="stat-header">
                 <div class="stat-icon danger">
-                    <i class="fas fa-exclamation-circle"></i>
+                    <i class="fas fa-exclamation-triangle"></i>
                 </div>
             </div>
-            <div class="stat-title">Unpaid Penalties</div>
-            <div class="stat-value"><?php echo $unpaid_missed_contributions; ?></div>
-            <div class="stat-description">Missed contributions pending</div>
+            <div class="stat-title">Missed Contributions</div>
+            <div class="dual-metric">
+                <div class="metric">
+                    <div class="metric-label">Count</div>
+                    <div class="metric-value count"><?php echo $paid_missed_contributions_count; ?> / <?php echo $unpaid_missed_contributions_count; ?></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Amount</div>
+                    <div class="metric-value amount"><?php echo number_format($paid_missed_contributions_amount, 0); ?> / <?php echo number_format($unpaid_missed_contributions_amount, 0); ?></div>
+                </div>
+            </div>
+            <div class="stat-description">Paid / Unpaid missed contributions</div>
         </div>
 
-        <div class="stat-card success fade-in-up">
+        <!-- Penalties -->
+        <div class="stat-card warning fade-in-up">
             <div class="stat-header">
-                <div class="stat-icon success">
-                    <i class="fas fa-check-double"></i>
+                <div class="stat-icon warning">
+                    <i class="fas fa-gavel"></i>
                 </div>
             </div>
-            <div class="stat-title">Paid Penalties</div>
-            <div class="stat-value"><?php echo $paid_missed_contributions; ?></div>
-            <div class="stat-description">Resolved missed contributions</div>
+            <div class="stat-title">Penalties</div>
+            <div class="dual-metric">
+                <div class="metric">
+                    <div class="metric-label">Count</div>
+                    <div class="metric-value count"><?php echo $paid_penalties_count; ?> / <?php echo $unpaid_penalties_count; ?></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Amount</div>
+                    <div class="metric-value amount"><?php echo number_format($paid_penalties_amount, 0); ?> / <?php echo number_format($unpaid_penalties_amount, 0); ?></div>
+                </div>
+            </div>
+            <div class="stat-description">Paid / Unpaid penalties</div>
         </div>
-    </div>
 
-    <!-- User Information Section -->
-    <div class="user-info-section fade-in-up">
-        <h3 class="section-title">
-            <i class="fas fa-user-circle"></i>
-            Dashboard Summary
-        </h3>
-        <ul class="info-list">
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-id-card text-primary"></i>
-                    User ID
-                </span>
-                <span class="info-value count"><?php echo $user_id; ?></span>
-            </li>
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-user-circle text-primary"></i>
-                    Username
-                </span>
-                <span class="info-value"><?php echo $user_name; ?></span>
-            </li>
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-piggy-bank text-success"></i>
-                    Total Approved Contributions
-                </span>
-                <span class="info-value currency">RWF <?php echo number_format($total_contributions, 2); ?></span>
-            </li>
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-hand-holding-usd text-info"></i>
-                    Total Approved Loan Requests
-                </span>
-                <span class="info-value currency">RWF <?php echo number_format($total_loan_requests, 2); ?></span>
-            </li>
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-exclamation-circle text-warning"></i>
-                    Total Unpaid Missed Contributions
-                </span>
-                <span class="info-value count"><?php echo $unpaid_missed_contributions; ?></span>
-            </li>
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-check-double text-success"></i>
-                    Total Paid Missed Contributions
-                </span>
-                <span class="info-value count"><?php echo $paid_missed_contributions; ?></span>
-            </li>
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-money-check-alt text-primary"></i>
-                    Total Approved Loan Payments
-                </span>
-                <span class="info-value currency">RWF <?php echo number_format($total_loan_payments, 2); ?></span>
-            </li>
-            <li class="info-item">
-                <span class="info-label">
-                    <i class="fas fa-chart-line text-warning"></i>
-                    Total Dividends (Estimated 10%)
-                </span>
-                <span class="info-value currency">RWF <?php echo number_format($total_dividends, 2); ?></span>
-            </li>
-        </ul>
+       
+
+        <!-- Outstanding Loans -->
+        <?php
+        $outstanding_loans = $total_loan_requests - $total_loan_payments;
+        ?>
+        <div class="stat-card info fade-in-up">
+            <div class="stat-header">
+                <div class="stat-icon info">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+            </div>
+            <div class="stat-title">Outstanding Loans</div>
+            <div class="stat-value">RWF <?php echo number_format($outstanding_loans, 0); ?></div>
+            <div class="stat-description">Loans yet to be repaid</div>
+        </div>
     </div>
 </div>
 
@@ -683,7 +714,11 @@ document.addEventListener('DOMContentLoaded', function() {
 function animateNumbers() {
     const numbers = document.querySelectorAll('.stat-value');
     numbers.forEach(number => {
-        const finalValue = number.textContent.replace(/[^\d.-]/g, '');
+        const text = number.textContent;
+        // Skip if it contains slashes (count ratios)
+        if (text.includes('/')) return;
+        
+        const finalValue = text.replace(/[^\d.-]/g, '');
         if (finalValue && !isNaN(finalValue)) {
             let current = 0;
             const increment = finalValue / 50;
@@ -693,7 +728,7 @@ function animateNumbers() {
                     current = finalValue;
                     clearInterval(timer);
                 }
-                if (number.textContent.includes('RWF')) {
+                if (text.includes('RWF')) {
                     number.textContent = 'RWF ' + Math.floor(current).toLocaleString();
                 } else {
                     number.textContent = Math.floor(current);

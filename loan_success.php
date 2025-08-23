@@ -37,15 +37,22 @@ try {
     $totalCount = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
     // Fetch loan requests for the logged-in user in the given tontine with pagination
-    $stmt = $pdo->prepare("
-        SELECT lr.id, lr.loan_amount, lr.interest_rate, lr.interest_amount, lr.total_amount, 
-               lr.payment_frequency, lr.payment_date, lr.status, lr.phone_number, lr.created_at, lr.late_loan_repayment_amount
-        FROM loan_requests lr
-        WHERE lr.tontine_id = :tontine_id
-        AND lr.user_id = :user_id
-        ORDER BY lr.created_at DESC
-        LIMIT :start, :perPage
-    ");
+   $stmt = $pdo->prepare("
+    SELECT lr.id, lr.loan_amount, lr.interest_rate, lr.interest_amount, lr.total_amount, 
+           lr.payment_frequency, lr.payment_date, lr.status, lr.phone_number, lr.created_at, 
+           lr.late_loan_repayment_amount,
+           IFNULL(SUM(lp.amount), 0) AS total_paid
+    FROM loan_requests lr
+    LEFT JOIN loan_payments lp 
+        ON lr.id = lp.loan_id AND lp.payment_status = 'Approved'
+    WHERE lr.tontine_id = :tontine_id 
+      AND lr.status='Approved'
+      AND lr.user_id = :user_id
+    GROUP BY lr.id
+    ORDER BY lr.created_at DESC
+    LIMIT :start, :perPage
+");
+
     $stmt->bindValue(':tontine_id', $tontine_id, PDO::PARAM_INT);
     $stmt->bindValue(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);  // Filter by logged-in user
     $stmt->bindValue(':start', $start, PDO::PARAM_INT);
@@ -114,37 +121,7 @@ try {
                         <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
                     </div>
                 </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Contributions
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
-                        <a class="dropdown-item" href="#">Send contributions</a>
-                        <a class="dropdown-item" href="#">View Total Contributions</a>
-                    </div>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Loans
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="loansDropdown">
-                        <a class="dropdown-item" href="#">View loan status</a>
-                        <a class="dropdown-item" href="#">Apply for loan</a>
-                        <a class="dropdown-item" href="#">Pay for loan</a>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
-                </li>
-            </ul>
-
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="javascript:void(0);" onclick="confirmLogout();">
-                        Logout
-                    </a>
-                </li>
-            </ul>
+               
         </div>
     </nav>
 
@@ -165,11 +142,14 @@ try {
             <th>Late Loan Repayment Amount</th>
             <th>Status</th>
             <th>Phone Number</th>
+            <th>Remaining Amount</th>
             <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-    <?php foreach ($loans as $loan): ?>
+    <?php foreach ($loans as $loan): 
+         $remaining = $loan['total_amount'] - $loan['total_paid'];
+         ?>
     <tr>
         <td><?php echo htmlspecialchars($loan['id']); ?></td>
         <td><?php echo htmlspecialchars($loan['loan_amount']); ?></td>
@@ -181,6 +161,7 @@ try {
         <td><?php echo htmlspecialchars($loan['late_loan_repayment_amount']); ?></td>
         <td><?php echo htmlspecialchars($loan['status']); ?></td> <!-- Status should persist -->
         <td><?php echo htmlspecialchars($loan['phone_number']); ?></td>
+        <td><?php echo number_format($remaining, 2); ?></td>
         <td>
         <a href="pay_now.php?loan_id=<?php echo $loan['id']; ?>&amount=<?php echo $loan['total_amount']; ?>&payment_date=<?php echo urlencode($loan['payment_date']); ?>&late_amount=<?php echo $loan['late_loan_repayment_amount']; ?>&phone=<?php echo urlencode($loan['phone_number']); ?>&tontine_id=<?php echo $tontine_id; ?>" class="btn btn-success btn-sm">
                 Pay Now

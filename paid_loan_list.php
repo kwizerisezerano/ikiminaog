@@ -159,13 +159,7 @@ try {
                 </li>
                 <!-- Add other navbar items here -->
             </ul>
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="javascript:void(0);" onclick="confirmLogout();">
-                        Logout
-                    </a>
-                </li>
-            </ul>
+           
         </div>
     </nav>
 

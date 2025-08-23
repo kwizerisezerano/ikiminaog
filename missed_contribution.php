@@ -53,6 +53,7 @@ try {
         JOIN users u ON mc.user_id = u.id
         WHERE mc.tontine_id = :tontine_id
         AND mc.user_id = :user_id
+        AND status='Unpaid'
         AND mc.id IN (
             SELECT MAX(mc.id) FROM missed_contributions mc 
             WHERE mc.tontine_id = :tontine_id

@@ -250,18 +250,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             $stmt->execute(['ref' => $transaction_ref]);
         } while ($stmt->fetchColumn() > 0);
 
-        // 🔐 Payment Integration
-        $pay = hdev_payment::pay($payment_method, $amount, $transaction_ref, $callback = '');
+        // 🚫 Removed payment integration (hdev_payment)
 
-        if ($pay->status !== 'success') {
-            $pdo->rollBack();
-            error_log("Payment failed: " . json_encode($pay));
-            handleError('Payment failed: ' . $pay->message, 'Payment Error');
-        }
-
-        // Record contribution
+        // Record contribution directly
         $stmt = $pdo->prepare("INSERT INTO contributions (user_id, tontine_id, amount, payment_method, contribution_date, transaction_ref, payment_status)
-                               VALUES (:user_id, :tontine_id, :amount, :payment_method, :contribution_date, :transaction_ref, 'Pending')");
+                               VALUES (:user_id, :tontine_id, :amount, :payment_method, :contribution_date, :transaction_ref, 'Approved')");
         $stmt->execute([
             'user_id' => $user_id,
             'tontine_id' => $tontine_id,

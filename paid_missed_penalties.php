@@ -180,7 +180,7 @@ try {
                         <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
                     </div>
                 </li>
-                <li class="nav-item dropdown">
+                <!-- <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Contributions
                     </a>
@@ -220,7 +220,7 @@ try {
                         Logout
                     </a>
                 </li>
-            </ul>
+            </ul> -->
         </div>
     </nav>
 
@@ -235,8 +235,7 @@ try {
                     <th>Reason</th>
                     <th>Amount</th>
                     <th>Phone Number</th>
-                    <th>Payment Status</th>
-                    <th>Transaction Ref</th>
+                    <th>Payment Status</th>                  
                     <th>Payment Date</th>
                 </tr>
             </thead>
@@ -249,7 +248,7 @@ try {
                     <td><?php echo htmlspecialchars($payment['amount']); ?></td>
                     <td><?php echo htmlspecialchars($payment['phone_number']); ?></td>
                     <td><?php echo htmlspecialchars($payment['payment_status']); ?></td>
-                    <td><?php echo htmlspecialchars($payment['transaction_ref']); ?></td>
+                  
                     <td><?php echo htmlspecialchars($payment['payment_date']); ?></td>
                 </tr>
                 <?php endforeach; ?>

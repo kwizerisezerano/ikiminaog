@@ -36,7 +36,7 @@ try {
     // Fetch penalties for the logged-in user in the given tontine with pagination
     $stmt = $pdo->prepare("SELECT p.id, p.penalty_amount, p.infraction_date, p.reason, p.missed_contribution_date, p.status
         FROM penalties p
-        WHERE p.tontine_id = :tontine_id
+        WHERE p.tontine_id = :tontine_id AND status='Unpaid'
         AND p.user_id = :user_id
         ORDER BY p.infraction_date DESC
         LIMIT :start, :perPage");
@@ -109,7 +109,7 @@ try {
                     <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="paymentsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Tontine
                     </a>
-                    <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
+                    <!-- <div class="dropdown-menu" aria-labelledby="paymentsDropdown">
                         <a class="dropdown-item" href="create_tontine.php">Create tontine</a>
                         <a class="dropdown-item" href="own_tontine.php">Tontine you Own</a>
                         <a class="dropdown-item" href="joined_tontine.php">List of Ibimina you have joined</a>
@@ -145,7 +145,7 @@ try {
                         Logout
                     </a>
                 </li>
-            </ul>
+            </ul> -->
         </div>
     </nav>
 

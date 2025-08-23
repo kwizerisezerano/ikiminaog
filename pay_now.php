@@ -4,10 +4,31 @@ require 'config.php';
 
 // Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
-    echo "<script>
-            alert('You must be logged in to access this page.');
-            window.location.href = 'index.php';
-          </script>";
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Access Denied</title>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    </head>
+    <body>
+        <script>
+            Swal.fire({
+                icon: 'warning',
+                title: 'Access Denied',
+                text: 'You must be logged in to access this page.',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'index.php';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    <?php
     exit();
 }
 
@@ -24,10 +45,31 @@ $transaction_ref = bin2hex(random_bytes(16));  // Generate a unique transaction 
 
 // Validate required parameters
 if (!$loan_id || !$payment_date || !$tontine_id) {
-    echo "<script>
-            alert('Required parameters are missing.');
-           window.location.href = 'loan_success.php?id=$tontine_id';
-          </script>";
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Missing Parameters</title>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    </head>
+    <body>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Missing Parameters',
+                text: 'Required parameters are missing.',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'loan_success.php?id=<?php echo $tontine_id; ?>';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    <?php
     exit();
 }
 
@@ -42,10 +84,31 @@ try {
     $loan = $loanStmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$loan) {
-        echo "<script>
-                alert('Loan not found.');
-                 window.location.href = 'loan_success.php?id=$tontine_id';
-              </script>";
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Loan Not Found</title>
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+        </head>
+        <body>
+            <script>
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Loan Not Found',
+                    text: 'Loan not found.',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'loan_success.php?id=<?php echo $tontine_id; ?>';
+                    }
+                });
+            </script>
+        </body>
+        </html>
+        <?php
         exit();
     }
     // Calculate the monthly payment
@@ -61,10 +124,31 @@ try {
 
     // If a payment already exists (either pending or completed), prevent insertion
     if ($checkPaymentStmt->rowCount() > 0) {
-        echo "<script>
-                alert('A payment for this loan has already been made or is pending.');
-            window.location.href = 'loan_success.php?id=$tontine_id';
-              </script>";
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Payment Already Exists</title>
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+        </head>
+        <body>
+            <script>
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Payment Already Exists',
+                    text: 'A payment for this loan has already been made or is pending.',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'loan_success.php?id=<?php echo $tontine_id; ?>';
+                    }
+                });
+            </script>
+        </body>
+        </html>
+        <?php
         exit();
     }
 
@@ -77,10 +161,31 @@ try {
         $pay = hdev_payment::pay($phone_number, $amount, $transaction_ref);
 
         if ($pay->status !== 'success') {
-            echo "<script>
-                    alert('Payment failed: " . $pay->message . "');
-                 window.location.href = 'loan_success.php?id=$tontine_id';
-                  </script>";
+            ?>
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Payment Failed</title>
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+            </head>
+            <body>
+                <script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Payment Failed',
+                        text: 'Payment failed: <?php echo addslashes($pay->message); ?>',
+                        confirmButtonText: 'OK'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'loan_success.php?id=<?php echo $tontine_id; ?>';
+                        }
+                    });
+                </script>
+            </body>
+            </html>
+            <?php
             exit();
         }
 
@@ -101,21 +206,61 @@ try {
             'phone_number' => $phone_number
         ]);
 
-      
-
         // Payment successful, now redirect the user back to their loan list page
-        echo "<script>
-                alert('Payment successful!');
-                 window.location.href = 'paid_loan_list.php?id=$tontine_id';
-              </script>";
+        ?>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Payment Successful</title>
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+        </head>
+        <body>
+            <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Payment Successful Initiated',
+                    text: 'Payment successful!Initiated',
+                    confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'paid_loan_list.php?id=<?php echo $tontine_id; ?>';
+                    }
+                });
+            </script>
+        </body>
+        </html>
+        <?php
         exit();
     }
 
 } catch (PDOException $e) {
-    echo "<script>
-            alert('Error: " . htmlspecialchars($e->getMessage()) . "');
-          window.location.href = 'loan_success.php?id=$tontine_id';
-          </script>";
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error</title>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+    </head>
+    <body>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error: <?php echo addslashes(htmlspecialchars($e->getMessage())); ?>',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'loan_success.php?id=<?php echo $tontine_id; ?>';
+                }
+            });
+        </script>
+    </body>
+    </html>
+    <?php
     exit();
 }
 ?>
@@ -156,11 +301,7 @@ try {
                 </li>
                 <!-- Additional Menu Items -->
             </ul>
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-white" href="javascript:void(0);" onclick="confirmLogout();">Logout</a>
-                </li>
-            </ul>
+         
         </div>
     </nav>
 
@@ -170,16 +311,10 @@ try {
 
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">Loan Details</h5>
+           
 
             <?php if ($loan): ?>
-                <p><strong>Loan Amount:</strong> $<?php echo number_format(round($loan['loan_amount']), 0); ?></p>
-                <p><strong>Interest Rate:</strong> <?php echo htmlspecialchars($loan['interest_rate']); ?>%</p>
-                <p><strong>Payment Frequency:</strong> <?php echo htmlspecialchars($loan['payment_frequency']); ?></p>
-                <p><strong>Due Payment Date:</strong> <?php echo htmlspecialchars($loan['payment_date']); ?></p>
-                <p><strong>Late Loan Repayment Amount:</strong> RWF <?php echo number_format(round($late_amount), 0); ?></p>
-                <p><strong>Tota Amount:</strong> <?php echo number_format(round($amount), 0); ?></p>
-                <p><strong>Total Amount:</strong> <?php echo number_format($monthlyPayment, 2); ?></p>
+               
 
 
                 <form action="pay_now.php?loan_id=<?php echo $loan_id; ?>&amount=<?php echo round($amount); ?>&payment_date=<?php echo urlencode($payment_date); ?>&late_amount=<?php echo round($late_amount); ?>&tontine_id=<?php echo $tontine_id; ?>" method="POST">
