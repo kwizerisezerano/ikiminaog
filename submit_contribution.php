@@ -28,14 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         $pdo->beginTransaction();
 
         // Validate tontine and join status
-        $stmt = $pdo->prepare("
-            SELECT tjr.status AS join_status, t.status AS tontine_status, t.occurrence, 
-                   t.total_contributions AS expected_amount, t.join_date, t.late_contribution_penalty
-            FROM tontine_join_requests tjr
-            INNER JOIN tontine t ON tjr.tontine_id = t.id
-            WHERE tjr.user_id = :user_id AND tjr.tontine_id = :tontine_id
-        ");
-        $stmt->execute(['user_id' => $user_id, 'tontine_id' => $tontine_id]); 
+        $stmt = $pdo->prepare("SELECT tjr.status AS join_status, t.status AS tontine_status, t.occurrence, 
+                                      t.total_contributions AS expected_amount, t.join_date, t.late_contribution_penalty
+                                FROM tontine_join_requests tjr
+                                INNER JOIN tontine t ON tjr.tontine_id = t.id
+                                WHERE tjr.user_id = :user_id AND tjr.tontine_id = :tontine_id");
+        $stmt->execute(['user_id' => $user_id, 'tontine_id' => $tontine_id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$result) {
@@ -43,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         }
 
         if ($result['join_status'] !== 'Permitted' || $result['tontine_status'] !== 'Justified') {
-            throw new Exception('tontine is not registered by sector or You are not Permitted by Admin of this tontine .');
+            throw new Exception('Tontine is not registered by sector or you are not permitted by the admin of this tontine.');
         }
 
         // Generate contribution dates
@@ -70,110 +68,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             'join_date' => $result['join_date'],
             'occurrence' => $result['occurrence'],
         ]);
-        $dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $valid_dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        // Validate contribution date
+        $today = (new DateTime())->format('Y-m-d');
+        if (!in_array($today, $valid_dates)) {
+            throw new Exception('Today is not a valid contribution date.');
+        }
 
         // Check missed contributions
-        $today = (new DateTime())->format('Y-m-d');
-        $past_dates = array_filter($dates, fn($date) => $date < $today);
+        $past_dates = array_filter($valid_dates, fn($date) => $date < $today);
 
-        // Check if the contribution date is valid
-        $contribution_date = $today;
-
-        if (!in_array($contribution_date, $dates)) {
-            echo json_encode([
-                'status' => 'error',
-                'title' => 'Invalid Contribution Date',
-                'message' => 'The current date is not a valid contribution date for this tontine.',
-            ]);
-            exit();
-        }
-
-        // Check for duplicate contributions
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) 
-            FROM contributions
-            WHERE user_id = :user_id AND tontine_id = :tontine_id 
-            AND DATE(contribution_date) = :contribution_date
-        ");
-        $stmt->execute([
-            'user_id' => $user_id,
-            'tontine_id' => $tontine_id,
-            'contribution_date' => $contribution_date,
-        ]);
-
-        if ($stmt->fetchColumn() > 0) {
-            echo json_encode([
-                'status' => 'error',
-                'title' => 'Duplicate Contribution',
-                'message' => 'A contribution for today already exists for this tontine.',
-            ]);
-            exit();
-        }
-
-    
-        $transaction_ref = bin2hex(random_bytes(16));
-        $pay = hdev_payment::pay($payment_method, $amount, $transaction_ref);
-
-        if ($pay->status !== 'success') {
-            throw new Exception("Payment failed: " . $pay->message);
-        }
-
-        // Insert contribution
-        $stmt = $pdo->prepare("
-            INSERT INTO contributions (user_id, tontine_id, amount, payment_method, transaction_ref, contribution_date, payment_status)
-            VALUES (:user_id, :tontine_id, :amount, :payment_method, :transaction_ref, NOW(), 'Pending')
-        ");
-        $stmt->execute([
-            'user_id' => $user_id,
-            'tontine_id' => $tontine_id,
-            'amount' => $amount,
-            'payment_method' => $payment_method,
-            'transaction_ref' => $transaction_ref,
-        ]);
-
-        // Handle missed contributions and penalties
-        $stmt = $pdo->prepare("
-            SELECT contribution_date FROM contributions 
-            WHERE user_id = :user_id AND tontine_id = :tontine_id
-        ");
+        $stmt = $pdo->prepare("SELECT contribution_date FROM contributions WHERE user_id = :user_id AND tontine_id = :tontine_id");
         $stmt->execute(['user_id' => $user_id, 'tontine_id' => $tontine_id]);
         $contributed_dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-        $missed_dates = array_diff($past_dates, $contributed_dates);
-
-        foreach ($missed_dates as $missed_date) {
-            // Insert penalties
-            $stmt = $pdo->prepare("
-                INSERT IGNORE INTO penalties (user_id, tontine_id, penalty_amount, infraction_date, reason, missed_contribution_date)
-                VALUES (:user_id, :tontine_id, :penalty_amount, NOW(), 'Missed contributions', :missed_date)
-            ");
-            $stmt->execute([
-                'user_id' => $user_id,
-                'tontine_id' => $tontine_id,
-                'penalty_amount' => $result['late_contribution_penalty'],
-                'missed_date' => $missed_date,
-            ]);
-
-            // Insert missed contributions
-            $stmt = $pdo->prepare("
-                INSERT IGNORE INTO missed_contributions (user_id, tontine_id, missed_amount, missed_date)
-                VALUES (:user_id, :tontine_id, :missed_amount, :missed_date)
-            ");
-            $stmt->execute([
-                'user_id' => $user_id,
-                'tontine_id' => $tontine_id,
-                'missed_amount' => $result['expected_amount'],
-                'missed_date' => $missed_date,
-            ]);
+        // Prevent duplicate contributions on the same date
+        if (in_array($today, $contributed_dates)) {
+            throw new Exception('You have already made a contribution for today.');
         }
+
+        $missed_dates = array_diff($past_dates, $contributed_dates);
+        $penalty_applied_missed_dates = [];
+        $total_penalty = 0;
+
+        // Check for existing penalties on missed dates
+        foreach ($missed_dates as $missed_date) {
+            $stmt = $pdo->prepare("SELECT 1 FROM penalties WHERE user_id = :user_id AND tontine_id = :tontine_id AND missed_contribution_date = :missed_date");
+            $stmt->execute([
+                'user_id' => $user_id,
+                'tontine_id' => $tontine_id,
+                'missed_date' => $missed_date,
+            ]);
+
+            // If penalty does not exist, add it
+            if (!$stmt->fetchColumn()) {
+                $penalty_applied_missed_dates[] = $missed_date;
+                $total_penalty += $result['late_contribution_penalty'];
+
+                $stmt = $pdo->prepare("
+                    INSERT INTO penalties (user_id, tontine_id, penalty_amount, infraction_date, reason, missed_contribution_date)
+                    VALUES (:user_id, :tontine_id, :penalty_amount, NOW(), 'Missed contributions', :missed_date)
+                ");
+                $stmt->execute([
+                    'user_id' => $user_id,
+                    'tontine_id' => $tontine_id,
+                    'penalty_amount' => $result['late_contribution_penalty'],
+                    'missed_date' => $missed_date,
+                ]);
+            }
+        }
+
+        // Calculate the total payment
+        if (!empty($penalty_applied_missed_dates)) {
+            $total_payment = $amount + $total_penalty; // Add new penalties only
+        } else {
+            $total_payment = $amount; // Regular contribution without additional penalties
+        }
+
+        // Record the current contribution
+        $transaction_ref = bin2hex(random_bytes(16));
+        
+
+        $stmt = $pdo->prepare("INSERT INTO contributions (user_id, tontine_id, amount, payment_method, transaction_ref, contribution_date, payment_status)
+                               VALUES (:user_id, :tontine_id, :amount, :payment_method, :transaction_ref, NOW(), 'Pending')");
+        $stmt->execute([
+            'user_id' => $user_id,
+            'tontine_id' => $tontine_id,
+            'amount' => $total_payment,
+            'payment_method' => $payment_method,
+            'transaction_ref' => $transaction_ref,
+        ]);
 
         $pdo->commit();
 
         echo json_encode([
             'status' => 'success',
             'title' => 'Contribution Recorded',
-            'message' => 'Your contribution has been successfully recorded and payment processed.',
-            'redirect_url' => 'contribution_success.php?id=' . urlencode($tontine_id),
+            'message' => 'Your contribution and missed contributions have been successfully recorded.',
         ]);
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -184,4 +156,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         ]);
     }
 }
-?> 
+?>

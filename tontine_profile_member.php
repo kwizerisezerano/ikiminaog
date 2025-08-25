@@ -93,7 +93,7 @@ switch (strtolower($tontine['occurrence'])) {
         $occurrenceDisplay = '<p><strong>Day:</strong> ' . htmlspecialchars($tontine['day']) . '</p>';
         break;
     case 'monthly':
-        $occurrenceDisplay = '<p><strong>Date:</strong> ' . htmlspecialchars($tontine['date']) . '</p>';
+        $occurrenceDisplay = '<p><strong>Date:</strong> ' . htmlspecialchars($tontine['join_date']) . '</p>';
         break;
     default:
         $occurrenceDisplay = '<p><strong>Occurrence:</strong> ' . htmlspecialchars($tontine['occurrence']) . '</p>';
