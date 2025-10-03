@@ -640,11 +640,7 @@ try {
                 </div>
                 <h4>All Caught Up!</h4>
                 <p>You have no outstanding contributions for this tontine. Great work staying on top of your payments!</p>
-                <div class="mt-3">
-                    <a href="user_profile.php" class="btn btn-primary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                    </a>
-                </div>
+                
             </div>
         <?php endif; ?>
     </div>
