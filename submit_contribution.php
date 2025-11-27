@@ -108,17 +108,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             handleError('You have already made an approved contribution for today.');
         }
 
-        // Generate all expected contribution dates from join_date until yesterday
-        $contribution_dates = [];
+        // Generate ALL expected contribution dates from join_date until today (inclusive)
+        $all_expected_dates = [];
         $current_date = new DateTime($join_date);
-        $yesterday = new DateTime($today);
-        $yesterday->modify('-1 day'); // Only check up to yesterday, not today
+        $today_date = new DateTime($today);
         
-        // Debug: Log the date range being checked
-        error_log("Checking contribution dates from {$join_date} to {$yesterday->format('Y-m-d')}");
-        
-        while ($current_date <= $yesterday) {
-            $contribution_dates[] = $current_date->format('Y-m-d');
+        // Generate all contribution dates including today
+        while ($current_date <= $today_date) {
+            $all_expected_dates[] = $current_date->format('Y-m-d');
             
             // Increment based on occurrence
             switch ($occurrence) {
@@ -134,6 +131,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
                 default:
                     $pdo->rollBack();
                     handleError('Invalid tontine occurrence: ' . $occurrence);
+            }
+        }
+
+        // VALIDATE: Check if today is a valid contribution date
+        if (!in_array($today, $all_expected_dates)) {
+            $pdo->rollBack();
+            
+            // Find the next valid contribution date
+            $next_date = null;
+            $current_check = new DateTime($today);
+            $current_check->modify('+1 day');
+            
+            // Look for next 30 days to find next contribution date
+            for ($i = 0; $i < 30; $i++) {
+                $check_date = $current_check->format('Y-m-d');
+                
+                // Calculate if this would be a contribution date
+                $temp_date = new DateTime($join_date);
+                while ($temp_date->format('Y-m-d') < $check_date) {
+                    switch ($occurrence) {
+                        case 'Daily':
+                            $temp_date->modify('+1 day');
+                            break;
+                        case 'Weekly':
+                            $temp_date->modify('+7 days');
+                            break;
+                        case 'Monthly':
+                            $temp_date->modify('+1 month');
+                            break;
+                    }
+                    
+                    if ($temp_date->format('Y-m-d') === $check_date) {
+                        $next_date = $check_date;
+                        break 2;
+                    }
+                }
+                
+                $current_check->modify('+1 day');
+            }
+            
+            $error_message = "Today ({$today}) is not a valid contribution date for this {$occurrence} tontine.";
+            if ($next_date) {
+                $error_message .= " Your next contribution date is: {$next_date}";
+            }
+            
+            handleError($error_message, 'Invalid Contribution Date');
+        }
+
+        // Generate contribution dates up to yesterday for missed contribution checking
+        $contribution_dates = [];
+        $current_date = new DateTime($join_date);
+        $yesterday = new DateTime($today);
+        $yesterday->modify('-1 day'); // Only check up to yesterday, not today
+        
+        while ($current_date <= $yesterday) {
+            $contribution_dates[] = $current_date->format('Y-m-d');
+            
+            // Increment based on occurrence
+            switch ($occurrence) {
+                case 'Daily':
+                    $current_date->modify('+1 day');
+                    break;
+                case 'Weekly':
+                    $current_date->modify('+7 days');
+                    break;
+                case 'Monthly':
+                    $current_date->modify('+1 month');
+                    break;
             }
         }
 
@@ -272,7 +337,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
                 'missed_dates' => array_values($missed_dates),
                 'join_date' => $join_date,
                 'today' => $today,
-                'occurrence' => $occurrence
+                'occurrence' => $occurrence,
+                'all_valid_dates' => $all_expected_dates
             ],
             'redirect_url' => 'joined_tontine.php'
         ]);
