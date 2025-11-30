@@ -22,11 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
     }
 
     try {
-        // Check the tontine status and permitted join requests
+        // Check the tontine status and count members with Approved payment status only
         $stmt = $pdo->prepare("
             SELECT 
                 status, 
-                (SELECT COUNT(*) FROM tontine_join_requests WHERE tontine_id = :tontine_id AND status = 'Permitted') AS permitted_count 
+                (SELECT COUNT(*) FROM tontine_join_requests WHERE tontine_id = :tontine_id AND payment_status = 'Approved') AS approved_count 
             FROM tontine
             WHERE id = :tontine_id
         ");
@@ -44,12 +44,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             exit;
         }
 
-        // Restrict based on tontine status and permitted join count
-        if ($tontine['status'] !== 'Justified' && $tontine['permitted_count'] >= 5) {
+        // Updated logic: Check status only if approved member count >= 5
+        $approved_count = $tontine['approved_count'];
+        
+        if ($approved_count >= 5) {
+            // If we already have 5+ approved members, only allow more if status is 'Justified'
+            if ($tontine['status'] !== 'Justified') {
+                echo json_encode([
+                    'status' => 'warning',
+                    'title' => 'Tontine Not Available',
+                    'message' => 'This tontine has reached the maximum capacity for non-justified tontines. Only justified tontines can accept more than 5 members.',
+                    'redirect' => 'user_profile.php'
+                ]);
+                exit;
+            }
+        }
+        // For <5 approved members, allow joining regardless of status
+
+        // Set a reasonable upper limit to prevent unlimited growth
+        $max_members = ($tontine['status'] === 'Justified') ? 30 : 5;
+        
+        if ($approved_count >= $max_members) {
             echo json_encode([
                 'status' => 'warning',
                 'title' => 'Join Limit Reached',
-                'message' => 'This tontine has already reached its maximum allowed participants.',
+                'message' => 'This tontine has reached its maximum allowed participants (' . $max_members . ' members).',
                 'redirect' => 'join_tontine.php?id=' . $tontine_id
             ]);
             exit;
@@ -79,11 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
         // Check if payment was successful
         if ($pay->status == 'success') {
             // Payment was successful, insert the join request into the database
+            // Note: payment_status should be set based on your payment processing logic
+            $payment_status = 'Pending'; // This should be updated to 'Approved' after payment verification
+            
             $stmt = $pdo->prepare("
                 INSERT INTO tontine_join_requests 
-                (user_id, tontine_id, number_place, amount, payment_method, terms, status, reason, transaction_ref) 
+                (user_id, tontine_id, number_place, amount, payment_method, terms, status, reason, transaction_ref, payment_status) 
                 VALUES 
-                (:user_id, :tontine_id, :number_place, :amount, :payment_method, :terms, 'Pending', 'Stay patient your request is being processed', :transaction_ref)
+                (:user_id, :tontine_id, :number_place, :amount, :payment_method, :terms, 'Pending', 'Stay patient your request is being processed', :transaction_ref, :payment_status)
             ");
 
             // Bind parameters
@@ -94,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tontine_id'], $_POST[
             $stmt->bindParam(':payment_method', $payment_method, PDO::PARAM_STR);
             $stmt->bindParam(':terms', $terms, PDO::PARAM_STR);
             $stmt->bindParam(':transaction_ref', $transaction_ref, PDO::PARAM_STR);
+            $stmt->bindParam(':payment_status', $payment_status, PDO::PARAM_STR);
 
             if ($stmt->execute()) {
                 echo json_encode([

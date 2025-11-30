@@ -22,12 +22,21 @@ if (!$user) {
     exit();
 }
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
+
 // Get tontine ID from the URL
 $tontine_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-// Fetch tontine details
-$stmt = $pdo->prepare("SELECT tontine_name, total_contributions FROM tontine WHERE id = :id");
-$stmt->bindParam(':id', $tontine_id, PDO::PARAM_INT);
+// Fetch tontine details and check member count
+$stmt = $pdo->prepare("
+    SELECT 
+        tontine_name, 
+        total_contributions, 
+        status,
+        (SELECT COUNT(*) FROM tontine_join_requests WHERE tontine_id = :tontine_id AND status = 'Permitted' AND payment_status = 'Approved') AS permitted_approved_count
+    FROM tontine 
+    WHERE id = :tontine_id
+");
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
 $stmt->execute();
 $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -35,6 +44,16 @@ $tontine = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$tontine) {
     die("Tontine not found.");
 }
+
+// Check if user has already requested to join
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM tontine_join_requests WHERE user_id = :user_id AND tontine_id = :tontine_id");
+$stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+$stmt->bindParam(':tontine_id', $tontine_id, PDO::PARAM_INT);
+$stmt->execute();
+$already_requested = $stmt->fetchColumn() > 0;
+
+// Check if tontine is full (only if not justified)
+$is_full = ($tontine['status'] !== 'Justified' && $tontine['permitted_approved_count'] >= 5);
 
 // Get the total contributions for calculation
 $total_contributions = $tontine['total_contributions'];
@@ -83,6 +102,16 @@ $total_notifications = 5;
             background-color: #d6dce5;
             font-family: Arial, sans-serif;
             margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
         .form-container {
             background-color: #fff;
@@ -91,7 +120,6 @@ $total_notifications = 5;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
-            margin: 60px auto 0; /* Adds space below the navbar */
         }
         .form-title {
             color: #007bff;
@@ -115,6 +143,15 @@ $total_notifications = 5;
         }
         .form-check-label {
             font-size: 0.9rem;
+        }
+        .alert-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
         }
     </style>
 </head>
@@ -142,38 +179,7 @@ $total_notifications = 5;
                     </div>
             </li>
           
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Contributions
-                </a>
-                <div class="dropdown-menu" aria-labelledby="contributionsDropdown">
-                    <a class="dropdown-item" href="#">Send contributions</a>
-                    <a class="dropdown-item" href="#">View Total Contributions</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="loansDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Loans
-                </a>
-                <div class="dropdown-menu" aria-labelledby="loansDropdown">
-                    <a class="dropdown-item" href="#">View loan status</a>
-                    <a class="dropdown-item" href="#">Apply for loan</a>
-                    <a class="dropdown-item" href="#">Pay for loan</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Penalties
-                </a>
-                <div class="dropdown-menu" aria-labelledby="penaltiesDropdown">
-                    <a class="dropdown-item" href="#">View Paid Penalties</a>
-                    <a class="dropdown-item" href="#">View Unpaid Penalties</a>
-                    <a class="dropdown-item" href="#">Pay Penalties</a>
-                </div>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link font-weight-bold text-white" href="#">Notifications</a>
-            </li>
+            
         </ul>
 
         <ul class="navbar-nav ml-auto">
@@ -205,44 +211,71 @@ $total_notifications = 5;
     </div>
 </nav>
 
-<div class="form-container mt-3">
-    <h5 class="form-title">Welcome to Join <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
-    
-    <form id="joinForm" method="POST">
-        <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
-        <input type="hidden" id="total_contributions" value="<?php echo $total_contributions; ?>">
-
-        <div class="mb-3">
-            <label for="number_place" class="form-label">Number of Place</label>
-            <select class="form-select form-control" id="number_place" name="number_place" required>
-                <?php for ($i = 1; $i <= 30; $i++): ?>
-                    <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                <?php endfor; ?>
-            </select>
+<div class="content-wrapper">
+    <?php if ($already_requested): ?>
+        <!-- User has already requested to join -->
+        <div class="alert-container">
+            <div class="alert alert-warning" role="alert">
+                <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Already Requested</h4>
+                <p>You have already submitted a join request for <strong><?php echo htmlspecialchars($tontine['tontine_name']); ?></strong>.</p>
+                <hr>
+                <p class="mb-0">Please wait for the tontine administrator to review your request.</p>
+            </div>
+            <a href="user_profile.php" class="btn btn-primary mt-3">Back to Dashboard</a>
         </div>
-
-        <div class="mb-3">
-            <label for="amount" class="form-label">Amount</label>
-            <input type="text" class="form-control" id="amount" name="amount" readonly>
+    <?php elseif ($is_full): ?>
+        <!-- Tontine is full -->
+        <div class="alert-container">
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading"><i class="fas fa-users"></i> Tontine Full</h4>
+                <p><strong><?php echo htmlspecialchars($tontine['tontine_name']); ?></strong> has reached its maximum capacity.</p>
+                <hr>
+                <p class="mb-0">This tontine already has <strong><?php echo $tontine['permitted_approved_count']; ?></strong> approved members and cannot accept new participants.</p>
+            </div>
+            <a href="user_profile.php" class="btn btn-primary mt-3">Browse Other Tontines</a>
         </div>
+    <?php else: ?>
+        <!-- Show the join form -->
+        <div class="form-container">
+            <h5 class="form-title">Welcome to Join <?php echo htmlspecialchars($tontine['tontine_name']); ?></h5>
+            
+            <form id="joinForm" method="POST">
+                <input type="hidden" name="tontine_id" value="<?php echo $tontine_id; ?>">
+                <input type="hidden" id="total_contributions" value="<?php echo $total_contributions; ?>">
 
-        <div class="mb-3">
-            <label for="payment_method" class="form-label">Payment Method</label>
-            <input type="text" class="form-control" id="payment_method" name="payment_method" value="<?php echo $user['phone_number']; ?>" readonly>
+                <div class="mb-3">
+                    <label for="number_place" class="form-label">Number of Place</label>
+                    <select class="form-select form-control" id="number_place" name="number_place" required>
+                        <?php for ($i = 1; $i <= 30; $i++): ?>
+                            <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="amount" class="form-label">Amount</label>
+                    <input type="text" class="form-control" id="amount" name="amount" readonly>
+                </div>
+
+                <div class="mb-3">
+                    <label for="payment_method" class="form-label">Payment Method</label>
+                    <input type="text" class="form-control" id="payment_method" name="payment_method" value="<?php echo $user['phone_number']; ?>" readonly>
+                </div>
+
+                <p class="form-check-label">
+                    <input class="form-check-input" type="checkbox" id="terms">
+                    <input type="hidden" name="terms" id="termsValue" value="0">
+                    <span id="termsText">
+                        <a id="termsLink" href="view_terms_join.php?id=<?php echo $tontine_id; ?>" style="text-decoration: none; color: #007bff;">
+                            I have read and agree to the terms and conditions of Ikimina
+                        </a>
+                    </span>
+                </p>
+
+                <button type="submit" class="btn btn-submit" id="submitBtn" disabled>Submit Join Request</button>
+            </form>
         </div>
-
-        <p class="form-check-label">
-            <input class="form-check-input" type="checkbox" id="terms">
-            <input type="hidden" name="terms" id="termsValue" value="0">
-            <span id="termsText">
-                <a id="termsLink" href="view_terms_join.php?id=<?php echo $tontine_id; ?>" style="text-decoration: none; color: #007bff;">
-                    I have read and agree to the terms and conditions of Ikimina
-                </a>
-            </span>
-        </p>
-
-        <button type="submit" class="btn btn-submit" id="submitBtn" disabled>Submit Join Request</button>
-    </form>
+    <?php endif; ?>
 </div>
 
 <script>

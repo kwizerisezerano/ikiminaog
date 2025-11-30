@@ -21,58 +21,94 @@ $limit = 5; // Results per page
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $offset = ($page - 1) * $limit;
 
+// First, update payment statuses by checking with payment gateway
+$pendingPaymentsStmt = $pdo->prepare("
+    SELECT tjr.transaction_ref, tjr.id, tjr.payment_status 
+    FROM tontine_join_requests tjr
+    WHERE tjr.user_id = :user_id AND tjr.payment_status = 'Pending'
+");
+$pendingPaymentsStmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+$pendingPaymentsStmt->execute();
+$pendingPayments = $pendingPaymentsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($pendingPayments as $payment) {
+    $ref_id = $payment['transaction_ref'];
+    $id = $payment['id'];
+
+    // Only check payment status if transaction_ref exists
+    if (!empty($ref_id)) {
+        try {
+            // Fetch payment status from the payment gateway
+            $paymentResponse = hdev_payment::get_pay($ref_id);
+
+            // Check if the gateway response contains a status field
+            if (isset($paymentResponse->status)) {
+                $status1 = $paymentResponse->status;
+
+                // Map payment status from the gateway to database values
+                $newPaymentStatus = match ($status1) {
+                    'success' => "Approved",
+                    'failed' => "Failure",
+                    default => "Pending",
+                };
+
+                // Update payment status in the database only if it changed
+                if ($newPaymentStatus !== $payment['payment_status']) {
+                    $updatePaymentStmt = $pdo->prepare("
+                        UPDATE tontine_join_requests 
+                        SET payment_status = :payment_status 
+                        WHERE id = :id
+                    ");
+                    $updatePaymentStmt->bindValue(':payment_status', $newPaymentStatus);
+                    $updatePaymentStmt->bindValue(':id', $id, PDO::PARAM_INT);
+                    $updatePaymentStmt->execute();
+                }
+            }
+        } catch (Exception $e) {
+            // Log error but continue processing
+            error_log("Payment gateway error for transaction {$ref_id}: " . $e->getMessage());
+        }
+    }
+}
+
+// Now update all records where payment_status is "Approved" but status is not "Permitted"
+$updateStatusStmt = $pdo->prepare("
+    UPDATE tontine_join_requests 
+    SET status = 'Permitted' 
+    WHERE user_id = :user_id 
+    AND LOWER(payment_status) = 'approved' 
+    AND LOWER(status) != 'permitted'
+");
+$updateStatusStmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+$updateStatusResult = $updateStatusStmt->execute();
+
+// Debug: Check how many rows were affected
+$rowsAffected = $updateStatusStmt->rowCount();
+
 // Fetch join requests where the logged-in user has joined tontines
-$joinRequestsStmt = $pdo->prepare("SELECT tjr.transaction_ref, tjr.id, tjr.id, tjr.number_place, tjr.amount, tjr.payment_method, tjr.status, tjr.request_date, t.tontine_name,tjr.reason , tjr.payment_status
+// Added DISTINCT to avoid duplicate records and ensure we get the latest data
+$joinRequestsStmt = $pdo->prepare("
+    SELECT DISTINCT tjr.transaction_ref, tjr.id, tjr.number_place, tjr.amount, 
+           tjr.payment_method, tjr.status, tjr.request_date, t.tontine_name, 
+           tjr.reason, tjr.payment_status
     FROM tontine_join_requests tjr
     JOIN tontine t ON tjr.tontine_id = t.id
     WHERE tjr.user_id = :user_id
-    ORDER BY tjr.request_date DESC
-    LIMIT :limit OFFSET :offset");
+    ORDER BY tjr.request_date DESC, tjr.id DESC
+    LIMIT :limit OFFSET :offset
+");
 $joinRequestsStmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
 $joinRequestsStmt->bindParam(':limit', $limit, PDO::PARAM_INT);
 $joinRequestsStmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 $joinRequestsStmt->execute();
 $joinRequests = $joinRequestsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-foreach ($joinRequests as $joinRequest) {
-    $ref_id = $joinRequest['transaction_ref'];
-    $id = $joinRequest['id'];
-    $payment_status = $joinRequest['payment_status'];
-
-    // Check if the payment status is still pending
-    if ($payment_status == "Pending") {
-        // Fetch payment status from the payment gateway
-        $paymentResponse = hdev_payment::get_pay($ref_id);
-
-        // Assuming the gateway response contains a status field
-        if (isset($paymentResponse->status)) {
-            $status1 = $paymentResponse->status;
-
-            // Map payment status from the gateway to database values
-            $newStatus = match ($status1) {
-                'success' => "Approved",
-                'failed' => "Failure",
-                default => "Pending",
-            };
-
-            // Update the payment status in the database
-            $updateStmt = $pdo->prepare("
-                UPDATE tontine_join_requests 
-                SET payment_status = :payment_status 
-                WHERE id = :id
-            ");
-            $updateStmt->bindValue(':payment_status', $newStatus);
-            $updateStmt->bindValue(':id', $id, PDO::PARAM_INT);
-            $updateStmt->execute();
-        }
-    }
-}
-
-
-
-
-// Fetch total number of join requests for pagination calculation
-$totalRequestsStmt = $pdo->prepare("SELECT COUNT(*) FROM tontine_join_requests WHERE user_id = :user_id");
+// Fetch total number of DISTINCT join requests for pagination calculation
+$totalRequestsStmt = $pdo->prepare("
+    SELECT COUNT(DISTINCT tjr.id) 
+    FROM tontine_join_requests tjr 
+    WHERE tjr.user_id = :user_id
+");
 $totalRequestsStmt->execute(['user_id' => $user_id]);
 $totalRequests = $totalRequestsStmt->fetchColumn();
 $totalPages = ceil($totalRequests / $limit); // Total pages for pagination
@@ -89,13 +125,11 @@ $total_notifications = 5;
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body { background-color: #f8f9fa; }
-        .container { margin-top: 30px;
-            
-    width: 100%;
-    max-width: 100%;
-
-
-         }
+        .container { 
+            margin-top: 30px;
+            width: 100%;
+            max-width: 100%;
+        }
         .table-container {
             background-color: #fff;
             padding: 20px;
@@ -111,6 +145,59 @@ $total_notifications = 5;
             border-radius: 50%;
             padding: 2px 5px;
             font-size: 0.80rem;
+        }
+        .status-permitted {
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .status-pending {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .status-rejected {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .payment-approved {
+            background-color: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .payment-pending {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .payment-failure {
+            background-color: #dc3545;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .refresh-notice {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -139,7 +226,7 @@ $total_notifications = 5;
             </li>
             
             </li>
-            <li class="nav-item dropdown"hidden>
+            <li class="nav-item dropdown" hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="contributionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Contributions
                 </a>
@@ -158,7 +245,7 @@ $total_notifications = 5;
                     <a class="dropdown-item" href="#">Pay for loan</a>
                 </div>
             </li>
-            <li class="nav-item dropdown"hidden>
+            <li class="nav-item dropdown" hidden>
                 <a class="nav-link dropdown-toggle font-weight-bold text-white" href="#" id="penaltiesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Penalties
                 </a>
@@ -202,9 +289,22 @@ $total_notifications = 5;
     </div>
 </nav>
     <div class="container ">
-        <h4 class="text-center">Tontines you joined </h4>
+        <h4 class="text-center">Tontines joined</h4>
+        
+        <?php if ($rowsAffected > 0): ?>
+        <div class="refresh-notice">
+            <i class="fas fa-info-circle"></i> <?php echo $rowsAffected; ?> record(s) were automatically updated based on payment status.
+        </div>
+        <?php endif; ?>
+        
         <div class="table-container">
             <?php if (!empty($joinRequests)): ?>
+                <div class="mb-3">
+                    <button onclick="location.reload()" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh Status
+                    </button>
+                </div>
+                
                 <table class="table table-bordered ">
                     <thead>
                         <tr class="table-primary">
@@ -223,18 +323,41 @@ $total_notifications = 5;
                             <tr>
                                 <td><?php echo htmlspecialchars($request['tontine_name']); ?></td>
                                 <td><?php echo htmlspecialchars($request['number_place']); ?></td>
-                                <td><?php echo htmlspecialchars($request['amount']); ?></td>
+                                <td><?php echo number_format($request['amount'], 2); ?></td>
                                 <td><?php echo htmlspecialchars($request['payment_method']); ?></td>
-                                <td><?php echo htmlspecialchars($request['status']); ?></td>
-                                <td><?php echo htmlspecialchars($request['reason']);?></td>
-                                <td><?php echo htmlspecialchars($request['payment_status']); ?></td>
-                                <td><?php echo htmlspecialchars($request['request_date']); ?></td>
+                                <td>
+                                    <?php 
+                                    $status = htmlspecialchars($request['status']);
+                                    $statusClass = match(strtolower($status)) {
+                                        'permitted' => 'status-permitted',
+                                        'pending' => 'status-pending',
+                                        'rejected' => 'status-rejected',
+                                        default => 'status-pending'
+                                    };
+                                    ?>
+                                    <span class="<?php echo $statusClass; ?>"><?php echo $status; ?></span>
+                                </td>
+                                <td><?php echo htmlspecialchars($request['reason'] ?? 'N/A');?></td>
+                                <td>
+                                    <?php 
+                                    $paymentStatus = htmlspecialchars($request['payment_status']);
+                                    $paymentClass = match(strtolower($paymentStatus)) {
+                                        'approved' => 'payment-approved',
+                                        'pending' => 'payment-pending',
+                                        'failure' => 'payment-failure',
+                                        default => 'payment-pending'
+                                    };
+                                    ?>
+                                    <span class="<?php echo $paymentClass; ?>"><?php echo $paymentStatus; ?></span>
+                                </td>
+                                <td><?php echo date('Y-m-d H:i', strtotime($request['request_date'])); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
 
                 <!-- Pagination Controls -->
+                <?php if ($totalPages > 1): ?>
                 <nav aria-label="Page navigation example">
                     <ul class="pagination justify-content-center">
                         <li class="page-item <?php echo ($page == 1) ? 'disabled' : ''; ?>">
@@ -254,8 +377,14 @@ $total_notifications = 5;
                         </li>
                     </ul>
                 </nav>
+                <?php endif; ?>
             <?php else: ?>
-                <p class="text-center">No tontines joined yet.</p>
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No tontines joined yet</h5>
+                    <p class="text-muted">Start by exploring available tontines to join!</p>
+                    <a href="browse_tontines.php" class="btn btn-primary">Browse Tontines</a>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -264,21 +393,39 @@ $total_notifications = 5;
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
-           function confirmLogout() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: 'Do you want to log out?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, log out',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = 'logout.php';
-            }
-        });
-    }
+        function confirmLogout() {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'Do you want to log out?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, log out',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'logout.php';
+                }
+            });
+        }
 
+        // Auto-refresh page every 30 seconds to check for payment status updates
+        let refreshInterval = setInterval(function() {
+            // Only refresh if there are pending payments
+            const pendingPayments = document.querySelectorAll('.payment-pending');
+            if (pendingPayments.length > 0) {
+                console.log('Refreshing page to check payment status...');
+                location.reload();
+            } else {
+                // Clear interval if no pending payments
+                clearInterval(refreshInterval);
+                console.log('No pending payments found, stopping auto-refresh.');
+            }
+        }, 30000);
+
+        // Clear interval when page is about to unload
+        window.addEventListener('beforeunload', function() {
+            clearInterval(refreshInterval);
+        });
     </script>
 </body>
 </html>

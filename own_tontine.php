@@ -18,7 +18,8 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 $user_name = htmlspecialchars($user['firstname'] . ' ' . $user['lastname']);
 
 // Fetch all tontines created by the user
-$tontineStmt = $pdo->prepare("SELECT id, tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, rules, purpose FROM tontine WHERE user_id = :user_id");
+$tontineStmt = $pdo->prepare("SELECT id, tontine_name, logo, join_date, province, district, sector, total_contributions, occurrence, time, day, date, rules, purpose FROM tontine WHERE user_id = :user_id ORDER BY join_date DESC");
+
 $tontineStmt->execute(['user_id' => $user_id]);
 $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -270,12 +271,12 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
         
         /* Navbar */
         .navbar {
-            background-color: var(--primary-color) !important;
+         
             padding: 0.5rem 1rem;
         }
         
         .navbar .nav-link {
-            color: rgba(255,255,255,0.85) !important;
+            color: white !important;
             font-weight: 500;
             padding: 0.5rem 1rem;
         }
@@ -325,7 +326,7 @@ $tontines = $tontineStmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark  bg-primary">
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
